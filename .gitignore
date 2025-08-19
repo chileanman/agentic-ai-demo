@@ -107,7 +107,8 @@ venv.bak/
 *.swo
 
 # Streamlit specific
-.streamlit/
+# Allow .streamlit directory for deployment
+# .streamlit/
 
 # Mac OS specific
 .DS_Store
