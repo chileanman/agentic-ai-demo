@@ -198,4 +198,4 @@ if st.session_state.selected_example:
             time.sleep(0.1)
             
             # Force a rerun to update the UI
-            st.experimental_rerun()
+            st.rerun()
