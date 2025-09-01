@@ -3,6 +3,7 @@ import pandas as pd
 import random
 import json
 import io
+import os
 from datetime import datetime
 
 def render_transformation_tab(selected_file):
@@ -16,6 +17,8 @@ def render_transformation_tab(selected_file):
     if selected_file:
         file_id = selected_file.split(":")[0].strip()
         file = next((f for f in st.session_state.processed_files if f["example_id"] == file_id), None)
+        filename = file["filename"] 
+        file_base, _ = os.path.splitext(filename)
         
         if file:
             st.subheader("Data Transformation")
@@ -181,7 +184,7 @@ def render_transformation_tab(selected_file):
                     }
                   ]
                 }
-                """.replace("EXAMPLE_FILE", file['filename']).replace("FILE_EXTENSION", file_type).replace("FILE_TYPE", file_type.upper())
+                """.replace("EXAMPLE_FILE", file_base).replace("FILE_EXTENSION", file_type).replace("FILE_TYPE", file_type.upper())
                 
                 st.code(transformed_data, language="json")
                 

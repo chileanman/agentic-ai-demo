@@ -1,0 +1,11 @@
+id,name,age,city,state,country,email,phone,occupation,company,salary,registered_at,last_login,is_active
+1,Alice Johnson,28,New York,NY,USA,alice.johnson@email.com,212-555-1234,Software Engineer,TechCorp,95000,2022-03-15,2024-06-01,true
+2,Bob Smith,34,San Francisco,CA,USA,bob.smith@email.com,415-555-5678,Product Manager,InnoWorks,120000,2021-11-20,2024-05-28,true
+3,Charlie Lee,22,Chicago,IL,USA,charlie.lee@email.com,312-555-8765,Data Analyst,DataGen,70000,2023-01-10,2024-06-02,false
+4,Diana Evans,30,Los Angeles,CA,USA,diana.evans@email.com,323-555-4321,UX Designer,Designify,85000,2020-07-25,2024-05-30,true
+5,Edward Brown,26,Boston,MA,USA,edward.brown@email.com,617-555-2468,Marketing Specialist,MarketMakers,68000,2022-09-12,2024-05-29,true
+6,Fiona Clark,31,Seattle,WA,USA,fiona.clark@email.com,206-555-1357,HR Manager,PeopleFirst,90000,2021-05-18,2024-06-01,true
+7,George Miller,29,Austin,TX,USA,george.miller@email.com,512-555-9753,Sales Executive,SalesForce,78000,2023-02-22,2024-05-31,false
+8,Hannah Davis,27,Denver,CO,USA,hannah.davis@email.com,303-555-8642,Accountant,FinExperts,72000,2022-12-05,2024-06-02,true
+9,Ian Wright,35,Miami,FL,USA,ian.wright@email.com,305-555-3579,Operations Lead,LogiTech,110000,2020-10-30,2024-05-28,true
+10,Julia Turner,24,Portland,OR,USA,julia.turner@email.com,503-555-4682,Content Writer,WriteNow,60000,2023-04-14,2024-06-01,false
