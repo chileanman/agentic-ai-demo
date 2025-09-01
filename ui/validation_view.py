@@ -63,7 +63,7 @@ def render_validation_tab(selected_file):
                         return 'background-color: #e6ffcc'
                 
                 # Display the issues table
-                st.dataframe(issues_df.style.applymap(highlight_severity, subset=["severity"]), use_container_width=True)
+                st.dataframe(issues_df.style.map(highlight_severity, subset=["severity"]), use_container_width=True)
                 
                 # Show sample data with issues highlighted
                 st.subheader("Sample Data with Issues Highlighted")

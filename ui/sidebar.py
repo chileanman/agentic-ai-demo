@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import random
+import os
+from io import BytesIO
+from docx import Document
+from PyPDF2 import PdfReader
 
 def render_sidebar():
     """
@@ -48,7 +52,7 @@ def render_sidebar():
     st.sidebar.markdown("Select examples to process:")
     
     # Create tabs for different selection methods
-    tab1, tab2, tab3, tab4 = st.sidebar.tabs(["Individual", "By Sender", "By Complexity", "By Type"])
+    tab1, tab2, tab3, tab4, tab5 = st.sidebar.tabs(["Individual", "By Sender", "By Complexity", "By Type", "Actions"])
     
     with tab1:
         # Individual example selection
@@ -161,6 +165,131 @@ def render_sidebar():
                     if st.button(f"{example['filename']}{status}", key=f"btn_type_{example_id}"):
                         st.session_state.selected_example = example_id
                         return
+                    
+    with tab5:
+        st.markdown("### Upload Files")
+
+        # ---------- Session-state bootstrapping ----------
+        ss = st.session_state
+        ss.setdefault("examples_metadata", {})
+        ss.setdefault("processing_status", {})
+        ss.setdefault("process_queue", [])
+        ss.setdefault("upload_counter", 0)
+        ss.setdefault("uploaded_registry", {})
+        ss.setdefault("upload_success_shown", False)
+
+        ext_to_bucket = {"csv": "csv", "xlsx": "excel", "json": "json", "docx": "word", "pdf": "pdf"}
+        supported_types_list = ["csv", "xlsx", "json", "docx", "pdf"]
+        
+        if st.button(
+            "Upload All Test Files",
+            disabled=True, 
+            help="The functionality will be available in upcoming releases."
+        ):
+            script_dir = os.path.dirname(os.path.abspath(__file__))  # /.../project_root/ui
+            test_folder = os.path.join(script_dir, "..", "test_files")  # ../test-files
+            test_folder = os.path.abspath(test_folder) 
+            test_files = [f for f in os.listdir(test_folder) if os.path.isfile(os.path.join(test_folder, f))]
+
+
+        uploaded_files = st.file_uploader(
+            "Choose files to upload",
+            type=supported_types_list,
+            accept_multiple_files=True,
+            key="tab5_file_uploader"
+        )
+
+        uploaded_ids = []
+
+        if uploaded_files:
+            if not ss.upload_success_shown:
+                st.toast(f"{len(uploaded_files)} file(s) uploaded successfully!")
+                ss.upload_success_shown = True
+
+            for uploaded_file in uploaded_files:
+                file_name = uploaded_file.name
+                ext = file_name.split(".")[-1].lower()
+                bucket = ext_to_bucket.get(ext, ext)
+
+                file_size = getattr(uploaded_file, "size", None)
+                file_type_mime = getattr(uploaded_file, "type", "")
+                file_key = f"{file_name}|{file_size}|{file_type_mime}"
+
+                if file_key in ss.uploaded_registry:
+                    example_id = ss.uploaded_registry[file_key]
+                else:
+                    ss.upload_counter += 1
+                    example_id = f"upload_{ss.upload_counter}"
+                    ss.uploaded_registry[file_key] = example_id
+
+                    ss.examples_metadata[example_id] = {
+                        "filename": file_name,
+                        "file_type": bucket,
+                        "sender": "User Upload",
+                        "sender_email": "user@local",
+                        "subject": f"Uploaded file: {file_name}",
+                        "complexity": "unknown",
+                        "email_body": "This file was uploaded by the user.",
+                        "file_obj": uploaded_file
+                    }
+
+                uploaded_ids.append(example_id)
+                
+                status_indicator = st.session_state.processing_status.get(example_id)
+
+                if status_indicator == "complete":
+                    status = " ✓"
+                else:
+                    status = ""
+                    
+                st.markdown(f"**{example_id}: {file_name}{status}**")
+
+                try:
+                    if file_name.endswith(".csv"):
+                        df = pd.read_csv(uploaded_file)
+                        st.write("📄 Document preview:")
+                        st.dataframe(df.head())
+                    elif file_name.endswith(".xlsx"):
+                        df = pd.read_excel(uploaded_file)
+                        st.write("📄 Document preview:")
+                        st.dataframe(df.head())
+                    elif file_name.endswith(".json"):
+                        import json
+                        data = json.load(uploaded_file)
+                        st.write("📄 Document preview:")
+                        st.json(data)
+                    elif file_name.endswith(".docx"):
+                        doc = Document(uploaded_file)
+                        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+                        st.write("📄 Document preview:")
+                        st.write(paragraphs[:5])
+                    elif file_name.endswith(".pdf"):
+                        pdf = PdfReader(uploaded_file)
+                        text = ""
+                        for page in pdf.pages[:2]:
+                            text += (page.extract_text() or "") + "\n"
+                        st.write("📄 Document preview:")
+                        st.text(text[:1000])
+                except Exception as e:
+                    st.warning(f"Preview failed: {e}")
+
+                # ---------- Single-file Process ----------
+                if st.button(f"Process {file_name}", key=f"process_upload_btn_{example_id}"):
+                    ss.process_queue = []  
+                    ss.selected_example = example_id
+                    if ss.processing_status.get(example_id) != "complete":
+                        ss.process_queue.append(example_id)
+                    st.rerun()
+
+            # ---------- Process All ----------
+            if st.button("Process All Uploaded Files", key="process_all_uploaded"):
+                ss.process_queue = [eid for eid in uploaded_ids if ss.processing_status.get(eid) != "complete"]
+                if ss.process_queue:
+                    ss.selected_example = ss.process_queue.pop(0)
+                st.rerun()
+
+        else:
+            ss.upload_success_shown = False
     
     # These buttons have been moved to the top of the sidebar
         

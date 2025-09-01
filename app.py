@@ -17,7 +17,7 @@ from ui.sidebar import render_sidebar
 # Set page configuration
 st.set_page_config(
     page_title="Agentic AI Demo",
-    page_icon="🤖",
+    page_icon="/assets/favicon.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -45,8 +45,24 @@ question_agent = QuestionAgent()
 transformation_agent = TransformationAgent()
 upload_agent = UploadAgent()
 
+# Force Dava Sans font globally
+st.markdown("""
+<style>
+html, body, [class*="css"], p, div, h1, h2, h3, h4, h5, h6, input, textarea {
+    font-family: 'Dava Sans', sans-serif !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+styles = {
+    "h1": "font-weight: 500; font-style: Medium; font-size: 32px; line-height: 120%; letter-spacing: 0%;",
+    "span": "color: #A3AAAE;"
+}
+# Endava logo
+st.image("./assets/logo.png", width=122)
+
 # Main app layout
-st.title("Agentic AI File Processing Demo")
+st.markdown(f'<h1 style="{styles['h1']}">Agentic AI File Processing <span style="{styles['span']}">Demo</span></h1>', unsafe_allow_html=True)
 st.markdown("""
 This demo showcases a team of AI agents working together to process files from partners and suppliers.
 The agents receive files via email, validate them, ask clarifying questions when needed, 

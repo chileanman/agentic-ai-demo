@@ -10,6 +10,12 @@ import random
 from ui.validation_view import render_validation_tab
 from ui.transformation_view import render_transformation_tab
 
+styles = {
+    "metricsTitle": "display: flex; flex-direction: column; width: 100%;",
+    "metricsSubtitle": "margin: 0; font-size: 14px;",
+    "metricsValue": "font-size: 32px; color: #FF5640;",
+}
+
 # Helper function to get agent color
 def get_agent_color(agent_name):
     """Returns a color for the given agent name."""
@@ -65,30 +71,93 @@ def render_dashboard():
     
     with col1:
         total_files = len(st.session_state.processed_files)
-        st.metric("Files Processed", total_files)
+        st.markdown(
+            f"""
+            <div style="{styles['metricsTitle']}
+            ">
+                <div><p style="{styles['metricsSubtitle']}">Files Processed</p></div>
+                <div style="{styles['metricsValue']}">{total_files}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     with col2:
         if total_files > 0:
             avg_time = sum(f["processing_time"] for f in st.session_state.processed_files) / total_files
-            st.metric("Avg. Processing Time", f"{avg_time:.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
+                    <div style="{styles['metricsValue']}">{avg_time:.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.metric("Avg. Processing Time", "0.00s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
+                    <div style="{styles['metricsValue']}">0.00s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     
     with col3:
         # Count unique senders
         if total_files > 0:
             unique_senders = len(set(f["sender"] for f in st.session_state.processed_files))
-            st.metric("Unique Senders", unique_senders)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Unique Senders</p></div>
+                    <div style="{styles['metricsValue']}">{unique_senders}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.metric("Unique Senders", 0)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Unique Senders</p></div>
+                    <div style="{styles['metricsValue']}">0</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     
     with col4:
         # Count files by complexity
         if total_files > 0:
             high_complexity = sum(1 for f in st.session_state.processed_files if f["complexity"] == "high")
-            st.metric("High Complexity Files", high_complexity)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">High Complexity Files</p></div>
+                    <div style="{styles['metricsValue']}">{high_complexity}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         else:
-            st.metric("High Complexity Files", 0)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">High Complexity Files</p></div>
+                    <div style="{styles['metricsValue']}">0</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
     
     # Create tabs for different visualizations
     tab1, tab2 = st.tabs(["Files by Type", "Processing Time"])
@@ -432,9 +501,27 @@ def render_dashboard():
             # Display aggregate metrics
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Total Files Processed", total_files)
+                st.markdown(
+                    f"""
+                    <div style="{styles['metricsTitle']}
+                    ">
+                        <div><p style="{styles['metricsSubtitle']}">Total Files Processed</p></div>
+                        <div style="{styles['metricsValue']}">{total_files}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             with col2:
-                st.metric("Avg. Processing Time", f"{avg_processing_time:.2f}s")
+                st.markdown(
+                    f"""
+                    <div style="{styles['metricsTitle']}
+                    ">
+                        <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
+                        <div style="{styles['metricsValue']}">{avg_processing_time:.2f}s</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             with col3:
                 file_types = {}
                 for file in st.session_state.processed_files:
@@ -444,12 +531,28 @@ def render_dashboard():
                     else:
                         file_types[file_type] = 1
                 most_common_type = max(file_types.items(), key=lambda x: x[1])[0]
-                st.metric("Most Common File Type", most_common_type)
+                st.markdown(
+                    f"""
+                    <div style="{styles['metricsTitle']}
+                    ">
+                        <div><p style="{styles['metricsSubtitle']}">Most Common File Type</p></div>
+                        <div style="{styles['metricsValue']}">{most_common_type}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             with col4:
                 high_complexity = sum(1 for f in st.session_state.processed_files if f["complexity"] == "high")
-                st.metric("High Complexity Files", high_complexity)
-            
-
+                st.markdown(
+                    f"""
+                    <div style="{styles['metricsTitle']}
+                    ">
+                        <div><p style="{styles['metricsSubtitle']}">High Complexity Files</p></div>
+                        <div style="{styles['metricsValue']}">{high_complexity}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             
             # Show agent performance comparison
             st.markdown("### Agent Performance Comparison")
@@ -732,11 +835,39 @@ def render_agent_details():
         # Metrics
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Emails Processed", len(st.session_state.processed_files))
+            processed_files = len(st.session_state.processed_files)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Emails Processed</p></div>
+                    <div style="{styles['metricsValue']}">{processed_files}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col2:
-            st.metric("Avg. Response Time", f"{random.uniform(0.5, 2.0):.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Response Time</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(0.5, 2.0):.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col3:
-            st.metric("Success Rate", f"{random.uniform(95, 99.9):.1f}%")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Success Rate</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(95, 99.9):.1f}%</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
         # Capabilities
         with st.expander("Capabilities", expanded=True):
@@ -795,12 +926,40 @@ def render_agent_details():
         # Metrics
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Files Validated", len(st.session_state.processed_files))
+            processed_files = len(st.session_state.processed_files)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Files Validated</p></div>
+                    <div style="{styles['metricsValue']}">{processed_files}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            ) 
         with col2:
-            st.metric("Avg. Validation Time", f"{random.uniform(0.3, 1.5):.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Validation Time</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(0.3, 1.5):.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col3:
             issues_detected = random.randint(0, 10)
-            st.metric("Issues Detected", issues_detected)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Issues Detected</p></div>
+                    <div style="{styles['metricsValue']}">{issues_detected}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
         # Capabilities
         with st.expander("Capabilities", expanded=True):
@@ -856,11 +1015,39 @@ def render_agent_details():
         # Metrics
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Questions Generated", len(st.session_state.questions_asked))
+            questions_asked = len(st.session_state.questions_asked)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Questions Generated</p></div>
+                    <div style="{styles['metricsValue']}">{questions_asked}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col2:
-            st.metric("Avg. Generation Time", f"{random.uniform(0.2, 1.0):.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Generation Time</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(0.2, 1.0):.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col3:
-            st.metric("Response Rate", f"{random.uniform(80, 95):.1f}%")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Response Rate</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(80, 95):.1f}%</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
         # Capabilities
         with st.expander("Capabilities", expanded=True):
@@ -918,11 +1105,39 @@ def render_agent_details():
         # Metrics
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Files Transformed", len(st.session_state.processed_files))
+            processed_files = len(st.session_state.processed_files)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Files Transformed</p></div>
+                    <div style="{styles['metricsValue']}">{processed_files}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col2:
-            st.metric("Avg. Transform Time", f"{random.uniform(0.5, 2.0):.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Transform Time</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(0.5, 2.0):.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col3:
-            st.metric("Formats Supported", 5)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Formats Supported</p></div>
+                    <div style="{styles['metricsValue']}">5</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
         # Capabilities
         with st.expander("Capabilities", expanded=True):
@@ -1041,11 +1256,39 @@ def render_agent_details():
         # Metrics
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Files Stored", len(st.session_state.processed_files))
+            processed_files = len(st.session_state.processed_files)
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Files Stored</p></div>
+                    <div style="{styles['metricsValue']}">{processed_files}</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col2:
-            st.metric("Avg. Storage Time", f"{random.uniform(0.2, 1.0):.2f}s")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Avg. Storage Time</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(0.2, 1.0):.2f}s</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         with col3:
-            st.metric("Storage Efficiency", f"{random.uniform(90, 99):.1f}%")
+            st.markdown(
+                f"""
+                <div style="{styles['metricsTitle']}
+                ">
+                    <div><p style="{styles['metricsSubtitle']}">Storage Efficiency</p></div>
+                    <div style="{styles['metricsValue']}">{random.uniform(90, 99):.1f}%</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
         
         # Capabilities
         with st.expander("Capabilities", expanded=True):
