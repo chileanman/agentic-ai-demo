@@ -1,6 +1,7 @@
 import time
 import random
 import json
+from utils.file_utils import update_performance_metric
 
 class TransformationAgent:
     """
@@ -46,9 +47,10 @@ class TransformationAgent:
         
         # Update performance metrics
         self.performance_metrics["files_processed"] += 1
-        self.performance_metrics["avg_processing_time"] = (
-            (self.performance_metrics["avg_processing_time"] * (self.performance_metrics["files_processed"] - 1) + processing_time) / 
-            self.performance_metrics["files_processed"]
+        self.performance_metrics["avg_processing_time"] = update_performance_metric(
+            self.performance_metrics["avg_processing_time"],
+            self.performance_metrics["files_processed"],
+            processing_time
         )
         
         # Simulate file size based on complexity

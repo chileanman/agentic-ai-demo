@@ -1,5 +1,6 @@
 import time
 import random
+from utils.file_utils import update_performance_metric
 
 class ValidationAgent:
     """
@@ -33,9 +34,10 @@ class ValidationAgent:
         
         # Update performance metrics
         self.performance_metrics["files_validated"] += 1
-        self.performance_metrics["avg_processing_time"] = (
-            (self.performance_metrics["avg_processing_time"] * (self.performance_metrics["files_validated"] - 1) + processing_time) / 
-            self.performance_metrics["files_validated"]
+        self.performance_metrics["avg_processing_time"] = update_performance_metric(
+            self.performance_metrics["avg_processing_time"],
+            self.performance_metrics["files_validated"],
+            processing_time
         )
         
         # Determine if file needs clarification based on complexity

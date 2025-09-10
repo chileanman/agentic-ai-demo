@@ -62,7 +62,7 @@ styles = {
 st.image("./assets/logo.png", width=122)
 
 # Main app layout
-st.markdown(f'<h1 style="{styles['h1']}">Agentic AI File Processing <span style="{styles['span']}">Demo</span></h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 style="{styles["h1"]}">Agentic AI File Processing <span style="{styles["span"]}">Demo</span></h1>', unsafe_allow_html=True)
 st.markdown("""
 This demo showcases a team of AI agents working together to process files from partners and suppliers.
 The agents receive files via email, validate them, ask clarifying questions when needed, 

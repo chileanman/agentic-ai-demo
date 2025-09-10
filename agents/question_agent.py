@@ -1,5 +1,6 @@
 import time
 import random
+from utils.file_utils import update_performance_metric
 
 class QuestionAgent:
     """
@@ -106,10 +107,10 @@ class QuestionAgent:
         
         # Update performance metrics
         self.performance_metrics["questions_generated"] += len(questions)
-        self.performance_metrics["avg_processing_time"] = (
-            (self.performance_metrics["avg_processing_time"] * 
-             (self.performance_metrics["questions_generated"] - len(questions)) + processing_time) / 
-            self.performance_metrics["questions_generated"] if self.performance_metrics["questions_generated"] > 0 else processing_time
+        self.performance_metrics["avg_processing_time"] = update_performance_metric(
+            self.performance_metrics["avg_processing_time"],
+            self.performance_metrics["questions_generated"],
+            processing_time
         )
         
         return questions

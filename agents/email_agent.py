@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 import random
+from utils.file_utils import update_performance_metric
 
 class EmailAgent:
     """
@@ -33,9 +34,10 @@ class EmailAgent:
         
         # Update performance metrics
         self.performance_metrics["emails_processed"] += 1
-        self.performance_metrics["avg_processing_time"] = (
-            (self.performance_metrics["avg_processing_time"] * (self.performance_metrics["emails_processed"] - 1) + processing_time) / 
-            self.performance_metrics["emails_processed"]
+        self.performance_metrics["avg_processing_time"] = update_performance_metric(
+            self.performance_metrics["avg_processing_time"],
+            self.performance_metrics["emails_processed"],
+            processing_time
         )
         
         # Extract file information
