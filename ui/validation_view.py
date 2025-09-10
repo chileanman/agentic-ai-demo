@@ -1,73 +1,112 @@
-import streamlit as st
-import pandas as pd
 import random
-import json
-import io
-from datetime import datetime
+
+import pandas as pd
+import streamlit as st
+
 
 def render_validation_tab(selected_file):
     """
     Renders the validation details tab.
     """
     if not st.session_state.processed_files:
-        st.info("No files have been processed yet. Select an example from the sidebar to begin.")
+        st.info(
+            "No files have been processed yet. Select an example from the sidebar to begin."
+        )
         return
-    
+
     if selected_file:
         file_id = selected_file.split(":")[0].strip()
-        file = next((f for f in st.session_state.processed_files if f["example_id"] == file_id), None)
-        
+        file = next(
+            (f for f in st.session_state.processed_files if f["example_id"] == file_id),
+            None,
+        )
+
         if file:
             st.subheader("Validation Details")
-            
+
             # Get example metadata
             example_data = st.session_state.examples_metadata[file_id]
             file_type = example_data["file_type"]
             complexity = example_data["complexity"]
-            
+
             # Create simulated validation results based on file type and complexity
             validation_issues = []
-            
+
             if complexity == "high":
                 validation_issues = [
-                    {"severity": "high", "field": "customer_id", "issue": "Missing values in required field", "count": random.randint(5, 15)},
-                    {"severity": "medium", "field": "transaction_date", "issue": "Invalid date format", "count": random.randint(3, 10)},
-                    {"severity": "low", "field": "amount", "issue": "Suspicious outlier values", "count": random.randint(1, 5)}
+                    {
+                        "severity": "high",
+                        "field": "customer_id",
+                        "issue": "Missing values in required field",
+                        "count": random.randint(5, 15),
+                    },
+                    {
+                        "severity": "medium",
+                        "field": "transaction_date",
+                        "issue": "Invalid date format",
+                        "count": random.randint(3, 10),
+                    },
+                    {
+                        "severity": "low",
+                        "field": "amount",
+                        "issue": "Suspicious outlier values",
+                        "count": random.randint(1, 5),
+                    },
                 ]
             elif complexity == "medium":
                 validation_issues = [
-                    {"severity": "medium", "field": "product_code", "issue": "Unknown product codes", "count": random.randint(2, 8)},
-                    {"severity": "low", "field": "customer_name", "issue": "Inconsistent formatting", "count": random.randint(1, 6)}
+                    {
+                        "severity": "medium",
+                        "field": "product_code",
+                        "issue": "Unknown product codes",
+                        "count": random.randint(2, 8),
+                    },
+                    {
+                        "severity": "low",
+                        "field": "customer_name",
+                        "issue": "Inconsistent formatting",
+                        "count": random.randint(1, 6),
+                    },
                 ]
             else:  # low complexity
                 if random.random() < 0.3:  # 30% chance of having a minor issue
                     validation_issues = [
-                        {"severity": "low", "field": "description", "issue": "Truncated text", "count": random.randint(1, 3)}
+                        {
+                            "severity": "low",
+                            "field": "description",
+                            "issue": "Truncated text",
+                            "count": random.randint(1, 3),
+                        }
                     ]
-            
+
             # Display validation summary
             if validation_issues:
                 total_issues = sum(issue["count"] for issue in validation_issues)
-                st.warning(f"Found {total_issues} validation issues in {file['filename']}")
-                
+                st.warning(
+                    f"Found {total_issues} validation issues in {file['filename']}"
+                )
+
                 # Create a dataframe for the issues
                 issues_df = pd.DataFrame(validation_issues)
-                
+
                 # Add color coding for severity
                 def highlight_severity(val):
                     if val == "high":
-                        return 'background-color: #ffcccc'
+                        return "background-color: #ffcccc"
                     elif val == "medium":
-                        return 'background-color: #ffffcc'
+                        return "background-color: #ffffcc"
                     else:
-                        return 'background-color: #e6ffcc'
-                
+                        return "background-color: #e6ffcc"
+
                 # Display the issues table
-                st.dataframe(issues_df.style.map(highlight_severity, subset=["severity"]), use_container_width=True)
-                
+                st.dataframe(
+                    issues_df.style.map(highlight_severity, subset=["severity"]),
+                    use_container_width=True,
+                )
+
                 # Show sample data with issues highlighted
                 st.subheader("Sample Data with Issues Highlighted")
-                
+
                 # Create sample data based on file type
                 if file_type == "csv":
                     sample_data = """
@@ -107,19 +146,31 @@ def render_validation_tab(selected_file):
                     """
                     st.code(sample_data, language="json")
                 else:
-                    st.info(f"Sample data preview not available for {file_type.upper()} files")
+                    st.info(
+                        f"Sample data preview not available for {file_type.upper()} files"
+                    )
             else:
                 st.success(f"No validation issues found in {file['filename']}")
-                
+
             # Show validation process details
             with st.expander("Validation Process Details"):
                 st.markdown("**Validation Rules Applied:**")
-                st.markdown("- Required fields check: Ensure all mandatory fields have values")
-                st.markdown("- Data type validation: Verify correct data types for each field")
-                st.markdown("- Format validation: Check date formats, numeric ranges, etc.")
-                st.markdown("- Business rule validation: Apply domain-specific validation rules")
-                st.markdown("- Outlier detection: Identify statistical outliers in numeric fields")
-                
+                st.markdown(
+                    "- Required fields check: Ensure all mandatory fields have values"
+                )
+                st.markdown(
+                    "- Data type validation: Verify correct data types for each field"
+                )
+                st.markdown(
+                    "- Format validation: Check date formats, numeric ranges, etc."
+                )
+                st.markdown(
+                    "- Business rule validation: Apply domain-specific validation rules"
+                )
+                st.markdown(
+                    "- Outlier detection: Identify statistical outliers in numeric fields"
+                )
+
                 st.markdown("**Validation Performance:**")
                 col1, col2, col3 = st.columns(3)
                 with col1:
