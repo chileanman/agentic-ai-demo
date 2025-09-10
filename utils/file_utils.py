@@ -258,3 +258,19 @@ def create_sample_json(filename, complexity="low"):
         "depth": depth,
         "fields_per_level": fields_per_level
     }
+
+def update_performance_metric(current_avg, current_count, new_value):
+    """
+    Efficiently update a running average performance metric.
+    
+    Args:
+        current_avg (float): Current average value
+        current_count (int): Current count of items
+        new_value (float): New value to incorporate
+        
+    Returns:
+        float: Updated average
+    """
+    if current_count == 0:
+        return new_value
+    return (current_avg * (current_count - 1) + new_value) / current_count
