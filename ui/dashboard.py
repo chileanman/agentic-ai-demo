@@ -573,45 +573,36 @@ def render_dashboard():
             # Show processing time table by agent
             st.markdown("### Processing Time by Agent (seconds)")
             
-            # Function to get agent processing times for a specific file
             def get_agent_times(file_id):
-                # Use the same values as the Agent Performance Comparison chart
-                agent_times = {
-                    "Email Agent": random.uniform(0.1, 0.5),
-                    "Validation Agent": random.uniform(0.3, 1.0),
-                    "Question Agent": random.uniform(0.2, 0.8),
-                    "Transformation Agent": random.uniform(0.5, 2.0),
-                    "Upload Agent": random.uniform(0.2, 0.8)
-                }
-                return agent_times
+                apt = st.session_state.get("agent_processing_times", {})
+                return apt.get(file_id, {
+                    "Email Agent": 0.0,
+                    "Validation Agent": 0.0,
+                    "Question Agent": 0.0,
+                    "Transformation Agent": 0.0,
+                    "Upload Agent": 0.0
+                })
             
             if st.session_state.processed_files:
-                # Create a dataframe with processing times by agent for each file
                 data = []
                 for file in st.session_state.processed_files:
                     file_id = file["example_id"]
                     agent_times = get_agent_times(file_id)
-                    
-                    # Calculate total processing time
                     total_time = sum(agent_times.values())
-                    
-                    # Add row to data
                     row = {
                         "File ID": file_id,
                         "Filename": file["filename"],
-                        "Email Agent": round(agent_times["Email Agent"], 2),
-                        "Validation Agent": round(agent_times["Validation Agent"], 2),
-                        "Question Agent": round(agent_times["Question Agent"], 2),
-                        "Transformation Agent": round(agent_times["Transformation Agent"], 2),
-                        "Upload Agent": round(agent_times["Upload Agent"], 2),
-                        "Total": round(total_time, 2)
+                        "Email Agent": round(float(agent_times.get("Email Agent", 0.0)), 2),
+                        "Validation Agent": round(float(agent_times.get("Validation Agent", 0.0)), 2),
+                        "Question Agent": round(float(agent_times.get("Question Agent", 0.0)), 2),
+                        "Transformation Agent": round(float(agent_times.get("Transformation Agent", 0.0)), 2),
+                        "Upload Agent": round(float(agent_times.get("Upload Agent", 0.0)), 2),
+                        "Total": round(float(total_time), 2)
                     }
                     data.append(row)
                 
-                # Create dataframe
                 df = pd.DataFrame(data)
                 
-                # Calculate averages
                 avg_row = {
                     "File ID": "Average",
                     "Filename": "",
@@ -620,15 +611,11 @@ def render_dashboard():
                 for agent in ["Email Agent", "Validation Agent", "Question Agent", "Transformation Agent", "Upload Agent", "Total"]:
                     avg_row[agent] = round(df[agent].mean(), 2)
                 
-                # Add average row
                 df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
                 
-                # Pagination
-                if len(df) > 21:  # 20 files + 1 average row
-                    # Keep only the last 20 files + average row
+                if len(df) > 21:
                     df = pd.concat([df.iloc[-21:-1], df.iloc[-1:]], ignore_index=True)
                 
-                # Display the table without color highlighting
                 st.dataframe(df, use_container_width=True)
 
 def render_file_details():
