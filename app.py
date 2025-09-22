@@ -37,6 +37,8 @@ if 'process_queue' not in st.session_state:
     st.session_state.process_queue = []
 if 'examples_metadata' not in st.session_state:
     st.session_state.examples_metadata = get_example_metadata()
+if 'agent_processing_times' not in st.session_state:
+    st.session_state.agent_processing_times = {}
 
 # Initialize agents
 email_agent = EmailAgent()
@@ -93,6 +95,15 @@ if st.session_state.selected_example:
     if example_id not in st.session_state.processing_status or st.session_state.processing_status[example_id] != "complete":
         # Set status to processing to prevent duplicate processing
         st.session_state.processing_status[example_id] = "processing"
+
+        if example_id not in st.session_state.agent_processing_times:
+            st.session_state.agent_processing_times[example_id] = {
+                "Email Agent": 0.0,
+                "Validation Agent": 0.0,
+                "Question Agent": 0.0,
+                "Transformation Agent": 0.0,
+                "Upload Agent": 0.0,
+            }
         
         # Add log entry for email received
         st.session_state.agent_logs.append({
@@ -108,7 +119,8 @@ if st.session_state.selected_example:
         with st.spinner(f"Processing example {example_id}..."):
             # Email agent receives the file
             file_info = email_agent.receive_email(example_data)
-            time.sleep(0.5)  # Simulate processing time
+            st.session_state.agent_processing_times[example_id]["Email Agent"] = float(file_info.get("processing_time", 0.0))
+            time.sleep(0.5)
             
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
@@ -116,7 +128,8 @@ if st.session_state.selected_example:
             
             # Validation agent checks the file
             validation_result = validation_agent.validate_file(file_info)
-            time.sleep(0.5)  # Simulate processing time
+            st.session_state.agent_processing_times[example_id]["Validation Agent"] = float(validation_result.get("processing_time", 0.0))
+            time.sleep(0.5)
             
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
@@ -124,13 +137,16 @@ if st.session_state.selected_example:
             
             # If validation requires questions, ask them
             if validation_result.get("needs_clarification", False):
+                t0 = time.perf_counter()
                 questions = question_agent.generate_questions(validation_result)
+                elapsed = time.perf_counter() - t0
                 st.session_state.questions_asked.append({
                     "example_id": example_id,
                     "questions": questions,
                     "answered": False,
                     "timestamp": datetime.now()
                 })
+                st.session_state.agent_processing_times[example_id]["Question Agent"] = float(elapsed)
                 
                 # Track processing stage for visualization
                 if 'file_processing_stages' in st.session_state:
@@ -145,10 +161,13 @@ if st.session_state.selected_example:
                     "duration": random.uniform(0.5, 1.5),
                     "file_id": example_id
                 })
+            else:
+                st.session_state.agent_processing_times[example_id]["Question Agent"] = 0.0
             
             # Transform the data
             transformed_data = transformation_agent.transform_data(file_info, validation_result)
-            time.sleep(1.0)  # Simulate processing time
+            st.session_state.agent_processing_times[example_id]["Transformation Agent"] = float(transformed_data.get("processing_time", 0.0))
+            time.sleep(1.0)
             
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
@@ -156,7 +175,8 @@ if st.session_state.selected_example:
             
             # Upload the data
             storage_result = upload_agent.store_data(transformed_data)
-            time.sleep(0.5)  # Simulate processing time
+            st.session_state.agent_processing_times[example_id]["Upload Agent"] = float(storage_result.get("processing_time", 0.0))
+            time.sleep(0.5)
             
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
