@@ -85,27 +85,18 @@ def render_dashboard():
     with col2:
         if total_files > 0:
             avg_time = sum(f["processing_time"] for f in st.session_state.processed_files) / total_files
-            st.markdown(
-                f"""
-                <div style="{styles['metricsTitle']}
-                ">
-                    <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
-                    <div style="{styles['metricsValue']}">{avg_time:.2f}s</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
         else:
-            st.markdown(
-                f"""
-                <div style="{styles['metricsTitle']}
-                ">
-                    <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
-                    <div style="{styles['metricsValue']}">0.00s</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            avg_time = 0.0
+        st.markdown(
+            f"""
+            <div style="{styles['metricsTitle']}
+            ">
+                <div><p style="{styles['metricsSubtitle']}">Avg. Processing Time</p></div>
+                <div style="{styles['metricsValue']}">{avg_time:.2f}s</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
     with col3:
         # Count unique senders
@@ -556,67 +547,56 @@ def render_dashboard():
             
             # Show agent performance comparison
             st.markdown("### Agent Performance Comparison")
-            agent_perf = {
-                "Email Agent": random.uniform(0.1, 0.5),
-                "Validation Agent": random.uniform(0.3, 1.0),
-                "Question Agent": random.uniform(0.2, 0.8),
-                "Transformation Agent": random.uniform(0.5, 2.0),
-                "Upload Agent": random.uniform(0.2, 0.8)
-            }
+            st.markdown("### Agent Performance Comparison (Average Seconds)")
+            agents = ["Email Agent", "Validation Agent", "Question Agent", "Transformation Agent", "Upload Agent"]
+            times_sum = {a: 0.0 for a in agents}
+            file_count = len(st.session_state.get("agent_times", {}))
+            if file_count > 0:
+                for fid, at in st.session_state.agent_times.items():
+                    for a in agents:
+                        times_sum[a] += float(at.get(a, 0.0))
+                avg_times = {a: (times_sum[a] / file_count) for a in agents}
+            else:
+                avg_times = {a: 0.0 for a in agents}
             agent_perf_df = pd.DataFrame({
-                "Agent": list(agent_perf.keys()),
-                "Avg. Processing Time (s)": list(agent_perf.values())
+                "Agent": agents,
+                "Avg. Processing Time (s)": [round(avg_times[a], 2) for a in agents]
             })
             fig = px.bar(agent_perf_df, x="Agent", y="Avg. Processing Time (s)", title="Average Processing Time by Agent")
             st.plotly_chart(fig, use_container_width=True)
-            
-            # Show processing time table by agent
+
+            # Show processing time table by agent using recorded times
             st.markdown("### Processing Time by Agent (seconds)")
-            
-            def get_agent_times(file_id):
-                apt = st.session_state.get("agent_processing_times", {})
-                return apt.get(file_id, {
-                    "Email Agent": 0.0,
-                    "Validation Agent": 0.0,
-                    "Question Agent": 0.0,
-                    "Transformation Agent": 0.0,
-                    "Upload Agent": 0.0
-                })
-            
+            data = []
             if st.session_state.processed_files:
-                data = []
                 for file in st.session_state.processed_files:
                     file_id = file["example_id"]
-                    agent_times = get_agent_times(file_id)
-                    total_time = sum(agent_times.values())
+                    at = st.session_state.get("agent_times", {}).get(file_id, {})
+                    total_time = 0.0
                     row = {
                         "File ID": file_id,
                         "Filename": file["filename"],
-                        "Email Agent": round(float(agent_times.get("Email Agent", 0.0)), 2),
-                        "Validation Agent": round(float(agent_times.get("Validation Agent", 0.0)), 2),
-                        "Question Agent": round(float(agent_times.get("Question Agent", 0.0)), 2),
-                        "Transformation Agent": round(float(agent_times.get("Transformation Agent", 0.0)), 2),
-                        "Upload Agent": round(float(agent_times.get("Upload Agent", 0.0)), 2),
-                        "Total": round(float(total_time), 2)
                     }
+                    for a in agents:
+                        val = float(at.get(a, 0.0))
+                        row[a] = round(val, 2)
+                        total_time += val
+                    row["Total"] = round(total_time, 2)
                     data.append(row)
-                
+
                 df = pd.DataFrame(data)
-                
-                avg_row = {
-                    "File ID": "Average",
-                    "Filename": "",
-                }
-                
-                for agent in ["Email Agent", "Validation Agent", "Question Agent", "Transformation Agent", "Upload Agent", "Total"]:
-                    avg_row[agent] = round(df[agent].mean(), 2)
-                
+
+                avg_row = {"File ID": "Average", "Filename": ""}
+                for a in agents + ["Total"]:
+                    avg_row[a] = round(df[a].mean(), 2) if not df.empty else 0.0
                 df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
-                
+
                 if len(df) > 21:
                     df = pd.concat([df.iloc[-21:-1], df.iloc[-1:]], ignore_index=True)
-                
-                st.dataframe(df, use_container_width=True)
+            else:
+                df = pd.DataFrame([{"File ID": "Average", "Filename": "", **{a: 0.0 for a in agents}, "Total": 0.0}])
+
+            st.dataframe(df, use_container_width=True)
 
 def render_file_details():
     """
