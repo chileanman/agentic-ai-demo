@@ -64,7 +64,7 @@ def render_dashboard():
         st.progress(0, text=progress_text)
     
     # Create columns for metrics
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         total_files = len(st.session_state.processed_files)
@@ -156,6 +156,19 @@ def render_dashboard():
                 unsafe_allow_html=True
             )
     
+    with col5:
+        total_cost = st.session_state.get("total_cost", 0.0)
+        st.markdown(
+            f"""
+            <div style="{styles['metricsTitle']}"
+            >
+                <div><p style="{styles['metricsSubtitle']}">Total Estimated Cost</p></div>
+                <div style="{styles['metricsValue']}">${total_cost:,.2f}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     # Create tabs for different visualizations
     tab1, tab2 = st.tabs(["Files by Type", "Processing Time"])
     
@@ -203,7 +216,39 @@ def render_dashboard():
             st.info("No files have been processed yet. Select an example from the sidebar to begin.")
     
     # Agent Activity Timeline moved to agent details section
-    
+
+    st.subheader("Cost Breakdown")
+    if st.session_state.get("costs"):
+        cost_rows = []
+        for example_id, breakdown in st.session_state.costs.items():
+            metadata = st.session_state.examples_metadata.get(example_id, {})
+            filename = metadata.get("filename", example_id)
+            cost_rows.append({
+                "File": filename,
+                "Compute ($)": breakdown.get("compute_cost", 0.0),
+                "Model/API ($)": breakdown.get("model_cost", 0.0),
+                "Storage ($)": breakdown.get("storage_cost", 0.0),
+                "Egress ($)": breakdown.get("egress_cost", 0.0),
+                "Total ($)": breakdown.get("total_cost", 0.0),
+            })
+
+        totals = {
+            "File": "Total",
+            "Compute ($)": sum(row["Compute ($)"] for row in cost_rows),
+            "Model/API ($)": sum(row["Model/API ($)"] for row in cost_rows),
+            "Storage ($)": sum(row["Storage ($)"] for row in cost_rows),
+            "Egress ($)": sum(row["Egress ($)"] for row in cost_rows),
+            "Total ($)": sum(row["Total ($)"] for row in cost_rows),
+        }
+        cost_rows.append(totals)
+
+        cost_df = pd.DataFrame(cost_rows)
+        money_columns = ["Compute ($)", "Model/API ($)", "Storage ($)", "Egress ($)", "Total ($)"]
+        formatted_df = cost_df.style.format({col: "${:,.4f}" for col in money_columns})
+        st.dataframe(formatted_df, use_container_width=True)
+    else:
+        st.info("No cost data available yet. Process a file to see cost estimates.")
+
     # File picker for detailed view
     st.subheader("File Processing Details")
     

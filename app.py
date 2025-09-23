@@ -8,6 +8,7 @@ from agents.question_agent import QuestionAgent
 from agents.transformation_agent import TransformationAgent
 from agents.upload_agent import UploadAgent
 from utils.file_utils import get_example_metadata
+from utils.cost_utils import calculate_costs
 from ui.dashboard import render_dashboard, render_agent_details, render_file_details
 from ui.sidebar import render_sidebar
 
@@ -36,6 +37,10 @@ if 'examples_metadata' not in st.session_state:
     st.session_state.examples_metadata = get_example_metadata()
 if 'agent_processing_times' not in st.session_state:
     st.session_state.agent_processing_times = {}
+if 'costs' not in st.session_state:
+    st.session_state.costs = {}
+if 'total_cost' not in st.session_state:
+    st.session_state.total_cost = 0.0
 
 # Initialize agents
 email_agent = EmailAgent()
@@ -132,11 +137,14 @@ if st.session_state.selected_example:
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "validation"
             
+            question_count = 0
+
             # If validation requires questions, ask them
             if validation_result.get("needs_clarification", False):
                 t0 = time.perf_counter()
                 questions = question_agent.generate_questions(validation_result)
                 elapsed = time.perf_counter() - t0
+                question_count = len(questions)
                 st.session_state.questions_asked.append({
                     "example_id": example_id,
                     "questions": questions,
@@ -178,7 +186,22 @@ if st.session_state.selected_example:
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "upload"
-            
+
+            # Calculate and store cost estimates for this file
+            agent_durations = st.session_state.agent_processing_times.get(example_id, {})
+            cost_breakdown = calculate_costs(
+                agent_durations=agent_durations,
+                complexity=example_data.get("complexity", "medium"),
+                question_count=question_count,
+                file_size_bytes=transformed_data.get("file_size", 0),
+            )
+
+            previous_total = 0.0
+            if example_id in st.session_state.costs:
+                previous_total = st.session_state.costs[example_id].get("total_cost", 0.0)
+            st.session_state.costs[example_id] = cost_breakdown
+            st.session_state.total_cost = st.session_state.total_cost - previous_total + cost_breakdown["total_cost"]
+
             # Update processed files list
             st.session_state.processed_files.append({
                 "example_id": example_id,
