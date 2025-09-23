@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import time
 from datetime import datetime, timedelta
 import plotly.express as px
 import plotly.graph_objects as go
@@ -60,11 +59,9 @@ def render_dashboard():
         
         # Show progress
         total_files = len(st.session_state.process_queue) + 1  # +1 for the current file
-        processed = 0
-        current = 1
-        
+
         progress_text = f"Processing file 1 of {total_files}"
-        progress_bar = st.progress(0, text=progress_text)
+        st.progress(0, text=progress_text)
     
     # Create columns for metrics
     col1, col2, col3, col4 = st.columns(4)
