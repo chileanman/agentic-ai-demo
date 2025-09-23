@@ -556,67 +556,75 @@ def render_dashboard():
             
             # Show agent performance comparison
             st.markdown("### Agent Performance Comparison")
-            agent_perf = {
-                "Email Agent": random.uniform(0.1, 0.5),
-                "Validation Agent": random.uniform(0.3, 1.0),
-                "Question Agent": random.uniform(0.2, 0.8),
-                "Transformation Agent": random.uniform(0.5, 2.0),
-                "Upload Agent": random.uniform(0.2, 0.8)
-            }
+
+            agent_names = [
+                "Email Agent",
+                "Validation Agent",
+                "Question Agent",
+                "Transformation Agent",
+                "Upload Agent",
+            ]
+
+            agent_times_state = st.session_state.get("agent_times", {})
+            processed_files = st.session_state.processed_files
+            file_count = len(processed_files)
+
+            total_durations = {agent: 0.0 for agent in agent_names}
+            for file in processed_files:
+                times = agent_times_state.get(file["example_id"], {})
+                for agent in agent_names:
+                    total_durations[agent] += float(times.get(agent, 0.0))
+
+            if file_count > 0:
+                average_durations = {agent: total_durations[agent] / file_count for agent in agent_names}
+            else:
+                average_durations = {agent: 0.0 for agent in agent_names}
+
             agent_perf_df = pd.DataFrame({
-                "Agent": list(agent_perf.keys()),
-                "Avg. Processing Time (s)": list(agent_perf.values())
+                "Agent": agent_names,
+                "Avg. Processing Time (s)": [round(average_durations[agent], 2) for agent in agent_names]
             })
+
             fig = px.bar(agent_perf_df, x="Agent", y="Avg. Processing Time (s)", title="Average Processing Time by Agent")
             st.plotly_chart(fig, use_container_width=True)
-            
+
             # Show processing time table by agent
             st.markdown("### Processing Time by Agent (seconds)")
-            
-            def get_agent_times(file_id):
-                apt = st.session_state.get("agent_processing_times", {})
-                return apt.get(file_id, {
-                    "Email Agent": 0.0,
-                    "Validation Agent": 0.0,
-                    "Question Agent": 0.0,
-                    "Transformation Agent": 0.0,
-                    "Upload Agent": 0.0
-                })
-            
-            if st.session_state.processed_files:
-                data = []
-                for file in st.session_state.processed_files:
-                    file_id = file["example_id"]
-                    agent_times = get_agent_times(file_id)
-                    total_time = sum(agent_times.values())
-                    row = {
-                        "File ID": file_id,
-                        "Filename": file["filename"],
-                        "Email Agent": round(float(agent_times.get("Email Agent", 0.0)), 2),
-                        "Validation Agent": round(float(agent_times.get("Validation Agent", 0.0)), 2),
-                        "Question Agent": round(float(agent_times.get("Question Agent", 0.0)), 2),
-                        "Transformation Agent": round(float(agent_times.get("Transformation Agent", 0.0)), 2),
-                        "Upload Agent": round(float(agent_times.get("Upload Agent", 0.0)), 2),
-                        "Total": round(float(total_time), 2)
-                    }
-                    data.append(row)
-                
-                df = pd.DataFrame(data)
-                
-                avg_row = {
-                    "File ID": "Average",
-                    "Filename": "",
+
+            data = []
+            for file in processed_files:
+                file_id = file["example_id"]
+                times = agent_times_state.get(file_id, {})
+                row = {
+                    "File ID": file_id,
+                    "Filename": file["filename"],
                 }
-                
-                for agent in ["Email Agent", "Validation Agent", "Question Agent", "Transformation Agent", "Upload Agent", "Total"]:
-                    avg_row[agent] = round(df[agent].mean(), 2)
-                
-                df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
-                
-                if len(df) > 21:
-                    df = pd.concat([df.iloc[-21:-1], df.iloc[-1:]], ignore_index=True)
-                
-                st.dataframe(df, use_container_width=True)
+                total_time = 0.0
+                for agent in agent_names:
+                    duration = float(times.get(agent, 0.0))
+                    row[agent] = duration
+                    total_time += duration
+                row["Total"] = total_time
+                data.append(row)
+
+            df = pd.DataFrame(data)
+            columns = ["File ID", "Filename"] + agent_names + ["Total"]
+            df = df.reindex(columns=columns)
+
+            avg_row = {"File ID": "Average", "Filename": ""}
+            for agent in agent_names + ["Total"]:
+                avg_row[agent] = float(df[agent].mean()) if not df.empty else 0.0
+
+            df = pd.concat([df, pd.DataFrame([avg_row])], ignore_index=True)
+
+            numeric_cols = agent_names + ["Total"]
+            df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+            df[numeric_cols] = df[numeric_cols].round(2)
+
+            if len(df) > 21:
+                df = pd.concat([df.iloc[-21:-1], df.iloc[-1:]], ignore_index=True)
+
+            st.dataframe(df, use_container_width=True)
 
 def render_file_details():
     """

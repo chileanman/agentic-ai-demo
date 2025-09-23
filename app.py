@@ -4,7 +4,6 @@ from datetime import datetime
 import pandas as pd
 import json
 import os
-import random
 from agents.email_agent import EmailAgent
 from agents.validation_agent import ValidationAgent
 from agents.question_agent import QuestionAgent
@@ -37,8 +36,8 @@ if 'process_queue' not in st.session_state:
     st.session_state.process_queue = []
 if 'examples_metadata' not in st.session_state:
     st.session_state.examples_metadata = get_example_metadata()
-if 'agent_processing_times' not in st.session_state:
-    st.session_state.agent_processing_times = {}
+if 'agent_times' not in st.session_state:
+    st.session_state.agent_times = {}
 
 # Initialize agents
 email_agent = EmailAgent()
@@ -96,92 +95,102 @@ if st.session_state.selected_example:
         # Set status to processing to prevent duplicate processing
         st.session_state.processing_status[example_id] = "processing"
 
-        if example_id not in st.session_state.agent_processing_times:
-            st.session_state.agent_processing_times[example_id] = {
-                "Email Agent": 0.0,
-                "Validation Agent": 0.0,
-                "Question Agent": 0.0,
-                "Transformation Agent": 0.0,
-                "Upload Agent": 0.0,
-            }
-        
         # Add log entry for email received
         st.session_state.agent_logs.append({
             "timestamp": datetime.now(),
             "agent": "Email Agent",
             "action": f"Received email from {example_data['sender']} with subject '{example_data['subject']}'",
             "status": "complete",
-            "duration": random.uniform(0.5, 2.0),
+            "duration": 0.0,
             "file_id": example_id
         })
-        
+
         # Process the file through the agent pipeline
         with st.spinner(f"Processing example {example_id}..."):
+            agent_times = {
+                "Email Agent": 0.0,
+                "Validation Agent": 0.0,
+                "Question Agent": 0.0,
+                "Transformation Agent": 0.0,
+                "Upload Agent": 0.0,
+            }
+
             # Email agent receives the file
+            start_time = time.perf_counter()
             file_info = email_agent.receive_email(example_data)
-            st.session_state.agent_processing_times[example_id]["Email Agent"] = float(file_info.get("processing_time", 0.0))
+            agent_times["Email Agent"] = time.perf_counter() - start_time
+            if st.session_state.agent_logs and st.session_state.agent_logs[-1]["agent"] == "Email Agent":
+                st.session_state.agent_logs[-1]["duration"] = agent_times["Email Agent"]
             time.sleep(0.5)
-            
+
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "email"
-            
+
             # Validation agent checks the file
+            start_time = time.perf_counter()
             validation_result = validation_agent.validate_file(file_info)
-            st.session_state.agent_processing_times[example_id]["Validation Agent"] = float(validation_result.get("processing_time", 0.0))
+            agent_times["Validation Agent"] = time.perf_counter() - start_time
             time.sleep(0.5)
-            
+
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "validation"
-            
+
             # If validation requires questions, ask them
             if validation_result.get("needs_clarification", False):
-                t0 = time.perf_counter()
+                question_start = time.perf_counter()
                 questions = question_agent.generate_questions(validation_result)
-                elapsed = time.perf_counter() - t0
+                question_elapsed = time.perf_counter() - question_start
                 st.session_state.questions_asked.append({
                     "example_id": example_id,
                     "questions": questions,
                     "answered": False,
                     "timestamp": datetime.now()
                 })
-                st.session_state.agent_processing_times[example_id]["Question Agent"] = float(elapsed)
-                
+                agent_times["Question Agent"] = question_elapsed
+
                 # Track processing stage for visualization
                 if 'file_processing_stages' in st.session_state:
                     st.session_state.file_processing_stages[example_id] = "question"
-                
+
                 # Add log entry for questions asked
                 st.session_state.agent_logs.append({
                     "timestamp": datetime.now(),
                     "agent": "Question Agent",
                     "action": f"Generated {len(questions)} questions about the file",
                     "status": "pending",
-                    "duration": random.uniform(0.5, 1.5),
+                    "duration": question_elapsed,
                     "file_id": example_id
                 })
             else:
-                st.session_state.agent_processing_times[example_id]["Question Agent"] = 0.0
-            
+                agent_times["Question Agent"] = 0.0
+
             # Transform the data
+            start_time = time.perf_counter()
             transformed_data = transformation_agent.transform_data(file_info, validation_result)
-            st.session_state.agent_processing_times[example_id]["Transformation Agent"] = float(transformed_data.get("processing_time", 0.0))
+            agent_times["Transformation Agent"] = time.perf_counter() - start_time
             time.sleep(1.0)
-            
+
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "transform"
-            
+
             # Upload the data
+            start_time = time.perf_counter()
             storage_result = upload_agent.store_data(transformed_data)
-            st.session_state.agent_processing_times[example_id]["Upload Agent"] = float(storage_result.get("processing_time", 0.0))
+            agent_times["Upload Agent"] = time.perf_counter() - start_time
             time.sleep(0.5)
-            
+
             # Track processing stage for visualization
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "upload"
-            
+
+            # Persist measured agent times
+            st.session_state.agent_times[example_id] = agent_times
+
+            total_processing_time = sum(agent_times.values())
+
             # Update processed files list
             st.session_state.processed_files.append({
                 "example_id": example_id,
@@ -189,8 +198,8 @@ if st.session_state.selected_example:
                 "file_type": example_data["file_type"],
                 "sender": example_data["sender"],
                 "subject": example_data["subject"],
-                "received_time": datetime.now(),
-                "processing_time": random.uniform(1.0, 5.0),
+                "received_time": file_info.get("received_time", datetime.now()),
+                "processing_time": total_processing_time,
                 "status": "Processed" if not validation_result.get("needs_clarification", False) else "Awaiting Clarification",
                 "complexity": example_data["complexity"]
             })
@@ -204,7 +213,7 @@ if st.session_state.selected_example:
                 "agent": "Upload Agent",
                 "action": f"Data uploaded successfully in common format",
                 "status": "complete",
-                "duration": random.uniform(0.3, 1.0),
+                "duration": agent_times.get("Upload Agent", 0.0),
                 "file_id": example_id
             })
             
