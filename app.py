@@ -4,12 +4,14 @@ from datetime import datetime
 import pandas as pd
 import json
 import os
+import random
+
 from agents.email_agent import EmailAgent
 from agents.validation_agent import ValidationAgent
 from agents.question_agent import QuestionAgent
 from agents.transformation_agent import TransformationAgent
 from agents.upload_agent import UploadAgent
-from utils.file_utils import load_example_files, get_example_metadata
+from utils.file_utils import get_example_metadata
 from ui.dashboard import render_dashboard, render_agent_details, render_file_details
 from ui.sidebar import render_sidebar
 
@@ -211,7 +213,7 @@ if st.session_state.selected_example:
             st.session_state.agent_logs.append({
                 "timestamp": datetime.now(),
                 "agent": "Upload Agent",
-                "action": f"Data uploaded successfully in common format",
+                "action": "Data uploaded successfully in common format",
                 "status": "complete",
                 "duration": agent_times.get("Upload Agent", 0.0),
                 "file_id": example_id

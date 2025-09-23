@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import random
-import os
-from io import BytesIO
 from docx import Document
 from PyPDF2 import PdfReader
 
@@ -183,13 +181,10 @@ def render_sidebar():
         
         if st.button(
             "Upload All Test Files",
-            disabled=True, 
+            disabled=True,
             help="The functionality will be available in upcoming releases."
         ):
-            script_dir = os.path.dirname(os.path.abspath(__file__))  # /.../project_root/ui
-            test_folder = os.path.join(script_dir, "..", "test_files")  # ../test-files
-            test_folder = os.path.abspath(test_folder) 
-            test_files = [f for f in os.listdir(test_folder) if os.path.isfile(os.path.join(test_folder, f))]
+            pass
 
 
         uploaded_files = st.file_uploader(
