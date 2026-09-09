@@ -1,0 +1,19 @@
+[flake8]
+# E501 (line too long) is ignored because black is the line-length authority
+# (line-length = 88 in pyproject.toml) and does not wrap long strings/comments,
+# so flake8 flagging them again is redundant with black --check in CI.
+# max-line-length is therefore not set here to avoid the dead/contradictory
+# config the reviewer flagged (E501 disabled but a limit still declared).
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .tox
+per-file-ignores =
+    __init__.py:F401

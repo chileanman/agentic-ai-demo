@@ -77,6 +77,49 @@ This will start the Streamlit server and open the demo in your default web brows
 
 5. **Reset the demo** at any time using the "Reset Demo" button in the sidebar
 
+## Code Quality and Linting
+
+This project uses comprehensive linting tools to maintain code quality and consistency:
+
+### Linting Tools
+
+- **Black**: Automatic code formatting with 88 character line length
+- **Flake8**: Style checking and error detection
+- **isort**: Import sorting and organization
+- **Pre-commit hooks**: Automated linting before each commit
+
+### Setup for Development
+
+After installing the project dependencies, set up the pre-commit hooks:
+
+```bash
+pre-commit install
+```
+
+### Running Linting Tools
+
+```bash
+# Format code with Black
+black .
+
+# Check code style with Flake8
+flake8 .
+
+# Sort imports with isort
+isort .
+
+# Run all pre-commit hooks manually
+pre-commit run --all-files
+```
+
+### Configuration Files
+
+- `.flake8`: Flake8 configuration with Black-compatible settings
+- `pyproject.toml`: Black and isort configuration
+- `.pre-commit-config.yaml`: Pre-commit hooks configuration
+
+The pre-commit hooks will automatically run these tools before each commit to ensure code quality.
+
 ## Code Structure
 
 - `app.py`: Main application file
