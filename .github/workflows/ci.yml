@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if ls requirements*.txt 1> /dev/null 2>&1; then
+            for f in requirements*.txt; do pip install -r "$f"; done
+          fi
+
+      - name: black --check
+        run: black --check .
+
+      - name: flake8
+        run: flake8 .
+
+      - name: isort --check-only
+        run: isort --check-only .
+
+      - name: pytest
+        run: |
+          if find . -path ./.venv -prune -o -name 'test_*.py' -print -o -name '*_test.py' -print | grep -q .; then
+            pytest
+          else
+            echo "No tests found, skipping pytest."
+          fi
