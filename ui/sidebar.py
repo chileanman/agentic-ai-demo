@@ -57,6 +57,8 @@ def render_sidebar():
         st.session_state.processing_status = {}
         st.session_state.selected_example = None
         st.session_state.process_queue = []
+        st.session_state.costs = {}
+        st.session_state.total_cost = 0.0
         st.sidebar.success("Demo reset successfully!")
 
     st.sidebar.markdown("---")

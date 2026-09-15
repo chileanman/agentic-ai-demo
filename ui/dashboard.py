@@ -559,7 +559,7 @@ def render_dashboard():
                     timeline_df = timeline_df.sort_values("Time")
 
                     # Display the timeline
-                    for i, row in timeline_df.iterrows():
+                    for _, row in timeline_df.iterrows():
                         with st.container():
                             html_content = f"<div style='border-left: 3px solid {get_agent_color(row['Agent'])}; padding-left: 10px; margin-bottom: 10px;'>"
                             html_content += f"<strong>{row['Time'].strftime('%H:%M:%S')}</strong> - {row['Agent']}<br/>"
