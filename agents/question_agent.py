@@ -17,7 +17,8 @@ class QuestionAgent:
             "response_rate": 0.85,
             "question_quality": 0.92
         }
-    
+        self.last_processing_time = 0.0
+
     def generate_questions(self, validation_result):
         """
         Generates clarifying questions based on validation issues.
@@ -30,8 +31,9 @@ class QuestionAgent:
         """
         # Simulate processing time
         processing_time = random.uniform(0.5, 1.5)
+        self.last_processing_time = processing_time
         time.sleep(0.1)  # Just a small delay for demo purposes
-        
+
         questions = []
         file_info = validation_result["file_info"]
         
