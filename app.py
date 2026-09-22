@@ -117,10 +117,10 @@ if st.session_state.selected_example:
                 "Upload Agent": 0.0,
             }
 
-            # Email agent receives the file
-            start_time = time.perf_counter()
+            # Each agent simulates a per-file processing time (random, scaled by
+            # complexity) — record that rather than the near-instant wall-clock call.
             file_info = email_agent.receive_email(example_data)
-            agent_times["Email Agent"] = time.perf_counter() - start_time
+            agent_times["Email Agent"] = file_info["processing_time"]
             if st.session_state.agent_logs and st.session_state.agent_logs[-1]["agent"] == "Email Agent":
                 st.session_state.agent_logs[-1]["duration"] = agent_times["Email Agent"]
             time.sleep(0.5)
@@ -130,9 +130,8 @@ if st.session_state.selected_example:
                 st.session_state.file_processing_stages[example_id] = "email"
 
             # Validation agent checks the file
-            start_time = time.perf_counter()
             validation_result = validation_agent.validate_file(file_info)
-            agent_times["Validation Agent"] = time.perf_counter() - start_time
+            agent_times["Validation Agent"] = validation_result["processing_time"]
             time.sleep(0.5)
 
             # Track processing stage for visualization
@@ -141,9 +140,8 @@ if st.session_state.selected_example:
 
             # If validation requires questions, ask them
             if validation_result.get("needs_clarification", False):
-                question_start = time.perf_counter()
                 questions = question_agent.generate_questions(validation_result)
-                question_elapsed = time.perf_counter() - question_start
+                question_elapsed = question_agent.last_processing_time
                 st.session_state.questions_asked.append({
                     "example_id": example_id,
                     "questions": questions,
@@ -169,9 +167,8 @@ if st.session_state.selected_example:
                 agent_times["Question Agent"] = 0.0
 
             # Transform the data
-            start_time = time.perf_counter()
             transformed_data = transformation_agent.transform_data(file_info, validation_result)
-            agent_times["Transformation Agent"] = time.perf_counter() - start_time
+            agent_times["Transformation Agent"] = transformed_data["processing_time"]
             time.sleep(1.0)
 
             # Track processing stage for visualization
@@ -179,9 +176,8 @@ if st.session_state.selected_example:
                 st.session_state.file_processing_stages[example_id] = "transform"
 
             # Upload the data
-            start_time = time.perf_counter()
             storage_result = upload_agent.store_data(transformed_data)
-            agent_times["Upload Agent"] = time.perf_counter() - start_time
+            agent_times["Upload Agent"] = storage_result["processing_time"]
             time.sleep(0.5)
 
             # Track processing stage for visualization
