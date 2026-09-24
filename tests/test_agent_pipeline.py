@@ -1,0 +1,71 @@
+"""Regression tests for the simulated agent pipeline.
+
+These pin the two failure modes the dashboard has actually hit: agents
+reporting a constant (or zero) processing time, and the pipeline raising
+part-way through a file.
+"""
+
+import pytest
+
+from agents.email_agent import EmailAgent
+from agents.question_agent import QuestionAgent
+from agents.transformation_agent import TransformationAgent
+from agents.upload_agent import UploadAgent
+from agents.validation_agent import ValidationAgent
+
+
+def make_email(index, complexity):
+    return {
+        "filename": f"example_{index}.csv",
+        "file_type": "csv",
+        "sender": "Acme Corp",
+        "sender_email": "files@acme.example",
+        "subject": f"File {index}",
+        "email_body": "",
+        "complexity": complexity,
+    }
+
+
+def run_pipeline(index, complexity):
+    """Runs one file through every agent and returns their reported times."""
+    file_info = EmailAgent().receive_email(make_email(index, complexity))
+    validation_result = ValidationAgent().validate_file(file_info)
+    QuestionAgent().generate_questions(validation_result)
+    transformed = TransformationAgent().transform_data(file_info, validation_result)
+    stored = UploadAgent().store_data(transformed)
+
+    return {
+        "email": file_info["processing_time"],
+        "validation": validation_result["processing_time"],
+        "transformation": transformed["processing_time"],
+        "upload": stored["processing_time"],
+    }
+
+
+@pytest.mark.parametrize("complexity", ["low", "medium", "high"])
+def test_every_agent_reports_a_positive_processing_time(complexity):
+    times = run_pipeline(0, complexity)
+    for agent, seconds in times.items():
+        assert seconds > 0, f"{agent} reported {seconds}s"
+
+
+def test_processing_times_differ_between_files():
+    """The dashboard once showed an identical 0.1s for every agent on every file."""
+    runs = [run_pipeline(i, "medium") for i in range(5)]
+    for agent in runs[0]:
+        reported = [run[agent] for run in runs]
+        assert len(set(reported)) > 1, f"{agent} reported a constant {reported[0]}s"
+
+
+def test_transformation_cost_scales_with_complexity():
+    """Complexity multipliers make the low and high ranges disjoint (<=2.0s vs >=3.5s)."""
+    low = max(run_pipeline(i, "low")["transformation"] for i in range(5))
+    high = min(run_pipeline(i, "high")["transformation"] for i in range(5))
+    assert high > low
+
+
+def test_pipeline_completes_for_every_complexity():
+    """Guards the crash class: a file must never raise part-way through the agents."""
+    for complexity in ["low", "medium", "high"]:
+        for index in range(5):
+            run_pipeline(index, complexity)
