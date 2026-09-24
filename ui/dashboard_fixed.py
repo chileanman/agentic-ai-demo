@@ -338,6 +338,7 @@ def render_file_details():
                     with st.expander("Outgoing Email - Clarification Questions", expanded=True):
                         # Format questions
                         questions_text = "\n".join([f"{i+1}. {q['question']}" for i, q in enumerate(file_questions["questions"])])
+                        questions_html = questions_text.replace('\n', '<br/>')
                         sender_first_name = file['sender'].split()[0]
                         
                         html_content = f"""<div style='border: 1px solid #ddd; padding: 15px; border-radius: 5px;'>
@@ -348,7 +349,7 @@ def render_file_details():
 <hr/>
 <p>Hello {sender_first_name},</p>
 <p>Thank you for sending the data file. Before we can complete processing, we need clarification on a few points:</p>
-<p>{questions_text.replace('\n', '<br/>')}</p>
+<p>{questions_html}</p>
 <p>Your prompt response will help us process this data accurately and efficiently.</p>
 <p>Best regards,<br/>Data Processing Team</p>
 </div>"""
