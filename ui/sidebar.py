@@ -5,6 +5,8 @@ import streamlit as st
 from docx import Document
 from PyPDF2 import PdfReader
 
+from utils.demo_state import reset_demo_state
+
 
 def render_sidebar():
     """
@@ -46,17 +48,9 @@ def render_sidebar():
 
     # Add a reset button
     if st.sidebar.button("Reset Demo", key="reset_top"):
-        # Clear session state
-        for key in [
-            "processed_files",
-            "agent_logs",
-            "questions_asked",
-            "processing_status",
-        ]:
-            st.session_state[key] = []
-        st.session_state.processing_status = {}
-        st.session_state.selected_example = None
-        st.session_state.process_queue = []
+        # Clears every per-run key, including the per-file agent timings, cost
+        # breakdowns and processing stages this list used to miss.
+        reset_demo_state(st.session_state)
         st.sidebar.success("Demo reset successfully!")
 
     st.sidebar.markdown("---")
