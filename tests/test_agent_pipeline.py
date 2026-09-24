@@ -65,6 +65,36 @@ def test_transformation_cost_scales_with_complexity():
     assert high > low
 
 
+def make_validation_result(index, needs_clarification):
+    return {
+        "file_info": EmailAgent().receive_email(make_email(index, "high")),
+        "is_valid": True,
+        "needs_clarification": needs_clarification,
+        "issues": (
+            [{"type": "Missing required fields", "severity": "high"}]
+            if needs_clarification
+            else []
+        ),
+        "processing_time": 1.0,
+    }
+
+
+def test_question_agent_average_smooths_rather_than_overwrites():
+    """Averaging over a hardcoded count of 1 silently replaces the running
+    average with the latest sample instead of smoothing it.
+    """
+    agent = QuestionAgent()
+    samples = [
+        agent.generate_questions(make_validation_result(i, False))["processing_time"]
+        for i in range(5)
+    ]
+
+    average = agent.performance_metrics["avg_processing_time"]
+    assert min(samples) <= average <= max(samples)
+    assert average != pytest.approx(samples[-1]), "average was overwritten by the last sample"
+    assert agent.performance_metrics["files_reviewed"] == 5
+
+
 @pytest.mark.parametrize("needs_clarification", [False, True])
 def test_question_agent_reports_timing_in_its_return_value(needs_clarification):
     """The deployed app crashed reading a QuestionAgent attribute that Streamlit's
