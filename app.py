@@ -11,6 +11,8 @@ from agents.validation_agent import ValidationAgent
 from agents.question_agent import QuestionAgent
 from agents.transformation_agent import TransformationAgent
 from agents.upload_agent import UploadAgent
+from utils.cost_utils import calculate_costs
+from utils.demo_state import initialise_session_state
 from utils.file_utils import get_example_metadata
 from ui.dashboard import render_dashboard, render_agent_details, render_file_details
 from ui.sidebar import render_sidebar
@@ -24,22 +26,11 @@ st.set_page_config(
 )
 
 # Initialize session state
-if 'processed_files' not in st.session_state:
-    st.session_state.processed_files = []
-if 'agent_logs' not in st.session_state:
-    st.session_state.agent_logs = []
-if 'questions_asked' not in st.session_state:
-    st.session_state.questions_asked = []
-if 'processing_status' not in st.session_state:
-    st.session_state.processing_status = {}
-if 'selected_example' not in st.session_state:
-    st.session_state.selected_example = None
-if 'process_queue' not in st.session_state:
-    st.session_state.process_queue = []
+# Every per-run key lives in utils/demo_state.py so that startup and the
+# sidebar's "Reset Demo" button cannot drift apart.
+initialise_session_state(st.session_state)
 if 'examples_metadata' not in st.session_state:
     st.session_state.examples_metadata = get_example_metadata()
-if 'agent_times' not in st.session_state:
-    st.session_state.agent_times = {}
 
 # Initialize agents
 email_agent = EmailAgent()
@@ -169,6 +160,19 @@ if st.session_state.selected_example:
                     "duration": question_elapsed,
                     "file_id": example_id
                 })
+            else:
+                st.session_state.agent_logs.append({
+                    "timestamp": datetime.now(),
+                    "agent": "Question Agent",
+                    "action": (
+                        "Reviewed the file, no clarification needed"
+                        if not validation_result.get("needs_clarification", False)
+                        else "Reviewed the file, no questions generated"
+                    ),
+                    "status": "complete",
+                    "duration": question_elapsed,
+                    "file_id": example_id
+                })
 
             # Transform the data
             transformed_data = transformation_agent.transform_data(file_info, validation_result)
@@ -193,6 +197,15 @@ if st.session_state.selected_example:
 
             total_processing_time = sum(agent_times.values())
 
+            # Cost is derived from the times the agents just reported, so it
+            # varies per file the same way the processing time does.
+            file_cost = calculate_costs(
+                agent_times,
+                example_data["complexity"],
+                len(questions)
+            )
+            st.session_state.file_costs[example_id] = file_cost
+
             # Update processed files list
             st.session_state.processed_files.append({
                 "example_id": example_id,
@@ -203,7 +216,8 @@ if st.session_state.selected_example:
                 "received_time": file_info.get("received_time", datetime.now()),
                 "processing_time": total_processing_time,
                 "status": "Processed" if not validation_result.get("needs_clarification", False) else "Awaiting Clarification",
-                "complexity": example_data["complexity"]
+                "complexity": example_data["complexity"],
+                "total_cost": file_cost["total_cost"]
             })
             
             # Update processing status
