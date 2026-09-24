@@ -92,7 +92,9 @@ def test_question_agent_average_smooths_rather_than_overwrites(monkeypatch):
     validations = [make_validation_result(i, False) for i in range(5)]
 
     samples = iter([0.20, 0.30, 0.40, 0.25, 0.35])
-    monkeypatch.setattr(question_agent.random, "uniform", lambda low, high: next(samples))
+    monkeypatch.setattr(
+        question_agent.random, "uniform", lambda low, high: next(samples)
+    )
 
     for validation in validations:
         agent.generate_questions(validation)

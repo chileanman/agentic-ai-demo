@@ -1,47 +1,44 @@
-import streamlit as st
 import time
 from datetime import datetime
-import pandas as pd
-import json
-import os
-import random
+
+import streamlit as st
 
 from agents.email_agent import EmailAgent
-from agents.validation_agent import ValidationAgent
 from agents.question_agent import QuestionAgent
 from agents.transformation_agent import TransformationAgent
 from agents.upload_agent import UploadAgent
+from agents.validation_agent import ValidationAgent
+from ui.dashboard import render_agent_details, render_dashboard, render_file_details
+from ui.sidebar import render_sidebar
 from utils.cost_utils import calculate_costs
 from utils.file_utils import get_example_metadata
-from ui.dashboard import render_dashboard, render_agent_details, render_file_details
-from ui.sidebar import render_sidebar
 
 # Set page configuration
 st.set_page_config(
     page_title="Agentic AI Demo",
     page_icon="/assets/favicon.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Initialize session state
-if 'processed_files' not in st.session_state:
+if "processed_files" not in st.session_state:
     st.session_state.processed_files = []
-if 'agent_logs' not in st.session_state:
+if "agent_logs" not in st.session_state:
     st.session_state.agent_logs = []
-if 'questions_asked' not in st.session_state:
+if "questions_asked" not in st.session_state:
     st.session_state.questions_asked = []
-if 'processing_status' not in st.session_state:
+if "processing_status" not in st.session_state:
     st.session_state.processing_status = {}
-if 'selected_example' not in st.session_state:
+if "selected_example" not in st.session_state:
     st.session_state.selected_example = None
-if 'process_queue' not in st.session_state:
+if "process_queue" not in st.session_state:
     st.session_state.process_queue = []
-if 'examples_metadata' not in st.session_state:
+if "examples_metadata" not in st.session_state:
     st.session_state.examples_metadata = get_example_metadata()
-if 'agent_times' not in st.session_state:
+if "agent_times" not in st.session_state:
     st.session_state.agent_times = {}
-if 'file_costs' not in st.session_state:
+if "file_costs" not in st.session_state:
     st.session_state.file_costs = {}
 
 # Initialize agents
@@ -52,26 +49,32 @@ transformation_agent = TransformationAgent()
 upload_agent = UploadAgent()
 
 # Force Dava Sans font globally
-st.markdown("""
+st.markdown(
+    """
 <style>
 html, body, [class*="css"], p, div, h1, h2, h3, h4, h5, h6, input, textarea {
     font-family: 'Dava Sans', sans-serif !important;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 styles = {
     "h1": "font-weight: 500; font-style: Medium; font-size: 32px; line-height: 120%; letter-spacing: 0%;",
-    "span": "color: #A3AAAE;"
+    "span": "color: #A3AAAE;",
 }
 # Endava logo
 st.image("./assets/logo.png", width=122)
 
 # Main app layout
-st.markdown(f'<h1 style="{styles["h1"]}">Agentic AI File Processing <span style="{styles["span"]}">Demo</span></h1>', unsafe_allow_html=True)
+st.markdown(
+    f'<h1 style="{styles["h1"]}">Agentic AI File Processing <span style="{styles["span"]}">Demo</span></h1>',
+    unsafe_allow_html=True,
+)
 st.markdown("""
 This demo showcases a team of AI agents working together to process files from partners and suppliers.
-The agents receive files via email, validate them, ask clarifying questions when needed, 
+The agents receive files via email, validate them, ask clarifying questions when needed,
 transform the data into a common format, and prepare it for storage in core systems.
 """)
 
@@ -94,21 +97,26 @@ with tab3:
 if st.session_state.selected_example:
     example_id = st.session_state.selected_example
     example_data = st.session_state.examples_metadata[example_id]
-    
+
     # Only process if not already processed or in progress
-    if example_id not in st.session_state.processing_status or st.session_state.processing_status[example_id] != "complete":
+    if (
+        example_id not in st.session_state.processing_status
+        or st.session_state.processing_status[example_id] != "complete"
+    ):
         # Set status to processing to prevent duplicate processing
         st.session_state.processing_status[example_id] = "processing"
 
         # Add log entry for email received
-        st.session_state.agent_logs.append({
-            "timestamp": datetime.now(),
-            "agent": "Email Agent",
-            "action": f"Received email from {example_data['sender']} with subject '{example_data['subject']}'",
-            "status": "complete",
-            "duration": 0.0,
-            "file_id": example_id
-        })
+        st.session_state.agent_logs.append(
+            {
+                "timestamp": datetime.now(),
+                "agent": "Email Agent",
+                "action": f"Received email from {example_data['sender']} with subject '{example_data['subject']}'",
+                "status": "complete",
+                "duration": 0.0,
+                "file_id": example_id,
+            }
+        )
 
         # Process the file through the agent pipeline
         with st.spinner(f"Processing example {example_id}..."):
@@ -127,12 +135,15 @@ if st.session_state.selected_example:
 
             file_info = email_agent.receive_email(example_data)
             agent_times["Email Agent"] = file_info["processing_time"]
-            if st.session_state.agent_logs and st.session_state.agent_logs[-1]["agent"] == "Email Agent":
+            if (
+                st.session_state.agent_logs
+                and st.session_state.agent_logs[-1]["agent"] == "Email Agent"
+            ):
                 st.session_state.agent_logs[-1]["duration"] = agent_times["Email Agent"]
             time.sleep(agent_times["Email Agent"] * DEMO_PACE)
 
             # Track processing stage for visualization
-            if 'file_processing_stages' in st.session_state:
+            if "file_processing_stages" in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "email"
 
             # Validation agent checks the file
@@ -141,7 +152,7 @@ if st.session_state.selected_example:
             time.sleep(agent_times["Validation Agent"] * DEMO_PACE)
 
             # Track processing stage for visualization
-            if 'file_processing_stages' in st.session_state:
+            if "file_processing_stages" in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "validation"
 
             # Every file goes past the question agent; only flagged ones get questions
@@ -152,47 +163,55 @@ if st.session_state.selected_example:
             time.sleep(question_elapsed * DEMO_PACE)
 
             if questions:
-                st.session_state.questions_asked.append({
-                    "example_id": example_id,
-                    "questions": questions,
-                    "answered": False,
-                    "timestamp": datetime.now()
-                })
+                st.session_state.questions_asked.append(
+                    {
+                        "example_id": example_id,
+                        "questions": questions,
+                        "answered": False,
+                        "timestamp": datetime.now(),
+                    }
+                )
 
                 # Track processing stage for visualization
-                if 'file_processing_stages' in st.session_state:
+                if "file_processing_stages" in st.session_state:
                     st.session_state.file_processing_stages[example_id] = "question"
 
                 # Add log entry for questions asked
-                st.session_state.agent_logs.append({
-                    "timestamp": datetime.now(),
-                    "agent": "Question Agent",
-                    "action": f"Generated {len(questions)} questions about the file",
-                    "status": "pending",
-                    "duration": question_elapsed,
-                    "file_id": example_id
-                })
+                st.session_state.agent_logs.append(
+                    {
+                        "timestamp": datetime.now(),
+                        "agent": "Question Agent",
+                        "action": f"Generated {len(questions)} questions about the file",
+                        "status": "pending",
+                        "duration": question_elapsed,
+                        "file_id": example_id,
+                    }
+                )
             else:
-                st.session_state.agent_logs.append({
-                    "timestamp": datetime.now(),
-                    "agent": "Question Agent",
-                    "action": (
-                        "Reviewed the file, no clarification needed"
-                        if not validation_result.get("needs_clarification", False)
-                        else "Reviewed the file, no questions generated"
-                    ),
-                    "status": "complete",
-                    "duration": question_elapsed,
-                    "file_id": example_id
-                })
+                st.session_state.agent_logs.append(
+                    {
+                        "timestamp": datetime.now(),
+                        "agent": "Question Agent",
+                        "action": (
+                            "Reviewed the file, no clarification needed"
+                            if not validation_result.get("needs_clarification", False)
+                            else "Reviewed the file, no questions generated"
+                        ),
+                        "status": "complete",
+                        "duration": question_elapsed,
+                        "file_id": example_id,
+                    }
+                )
 
             # Transform the data
-            transformed_data = transformation_agent.transform_data(file_info, validation_result)
+            transformed_data = transformation_agent.transform_data(
+                file_info, validation_result
+            )
             agent_times["Transformation Agent"] = transformed_data["processing_time"]
             time.sleep(agent_times["Transformation Agent"] * DEMO_PACE)
 
             # Track processing stage for visualization
-            if 'file_processing_stages' in st.session_state:
+            if "file_processing_stages" in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "transform"
 
             # Upload the data
@@ -201,7 +220,7 @@ if st.session_state.selected_example:
             time.sleep(agent_times["Upload Agent"] * DEMO_PACE)
 
             # Track processing stage for visualization
-            if 'file_processing_stages' in st.session_state:
+            if "file_processing_stages" in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "upload"
 
             # Persist measured agent times
@@ -212,63 +231,73 @@ if st.session_state.selected_example:
             # Cost is derived from the times the agents just reported, so it
             # varies per file the same way the processing time does.
             file_cost = calculate_costs(
-                agent_times,
-                example_data["complexity"],
-                len(questions)
+                agent_times, example_data["complexity"], len(questions)
             )
             st.session_state.file_costs[example_id] = file_cost
 
             # Update processed files list
-            st.session_state.processed_files.append({
-                "example_id": example_id,
-                "filename": example_data["filename"],
-                "file_type": example_data["file_type"],
-                "sender": example_data["sender"],
-                "subject": example_data["subject"],
-                "received_time": file_info.get("received_time", datetime.now()),
-                "processing_time": total_processing_time,
-                "status": "Processed" if not validation_result.get("needs_clarification", False) else "Awaiting Clarification",
-                "complexity": example_data["complexity"],
-                "total_cost": file_cost["total_cost"]
-            })
-            
+            st.session_state.processed_files.append(
+                {
+                    "example_id": example_id,
+                    "filename": example_data["filename"],
+                    "file_type": example_data["file_type"],
+                    "sender": example_data["sender"],
+                    "subject": example_data["subject"],
+                    "received_time": file_info.get("received_time", datetime.now()),
+                    "processing_time": total_processing_time,
+                    "status": (
+                        "Processed"
+                        if not validation_result.get("needs_clarification", False)
+                        else "Awaiting Clarification"
+                    ),
+                    "complexity": example_data["complexity"],
+                    "total_cost": file_cost["total_cost"],
+                }
+            )
+
             # Update processing status
             st.session_state.processing_status[example_id] = "complete"
-            
+
             # Add final log entry
-            st.session_state.agent_logs.append({
-                "timestamp": datetime.now(),
-                "agent": "Upload Agent",
-                "action": "Data uploaded successfully in common format",
-                "status": "complete",
-                "duration": agent_times.get("Upload Agent", 0.0),
-                "file_id": example_id
-            })
-            
+            st.session_state.agent_logs.append(
+                {
+                    "timestamp": datetime.now(),
+                    "agent": "Upload Agent",
+                    "action": "Data uploaded successfully in common format",
+                    "status": "complete",
+                    "duration": agent_times.get("Upload Agent", 0.0),
+                    "file_id": example_id,
+                }
+            )
+
             # Check if there are more files in the queue to process
             if st.session_state.process_queue:
                 # Get the next example from the queue
                 next_example = st.session_state.process_queue.pop(0)
-                
+
                 # Make sure we're not trying to process an already processed file
-                while (next_example in st.session_state.processing_status and 
-                       st.session_state.processing_status[next_example] == "complete" and 
-                       st.session_state.process_queue):
+                while (
+                    next_example in st.session_state.processing_status
+                    and st.session_state.processing_status[next_example] == "complete"
+                    and st.session_state.process_queue
+                ):
                     next_example = st.session_state.process_queue.pop(0)
                     if not st.session_state.process_queue:
                         break
-                
+
                 # Only set the next example if it's not already processed
-                if next_example not in st.session_state.processing_status or \
-                   st.session_state.processing_status[next_example] != "complete":
+                if (
+                    next_example not in st.session_state.processing_status
+                    or st.session_state.processing_status[next_example] != "complete"
+                ):
                     st.session_state.selected_example = next_example
                 else:
                     st.session_state.selected_example = None
             else:
                 st.session_state.selected_example = None
-                
+
             # Add a small delay before rerunning to prevent race conditions
             time.sleep(0.1)
-            
+
             # Force a rerun to update the UI
             st.rerun()
