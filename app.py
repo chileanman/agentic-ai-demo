@@ -169,7 +169,11 @@ if st.session_state.selected_example:
                 st.session_state.agent_logs.append({
                     "timestamp": datetime.now(),
                     "agent": "Question Agent",
-                    "action": "Reviewed the file, no clarification needed",
+                    "action": (
+                        "Reviewed the file, no clarification needed"
+                        if not validation_result.get("needs_clarification", False)
+                        else "Reviewed the file, no questions generated"
+                    ),
                     "status": "complete",
                     "duration": question_elapsed,
                     "file_id": example_id

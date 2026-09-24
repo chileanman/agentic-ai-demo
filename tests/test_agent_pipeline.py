@@ -7,6 +7,7 @@ part-way through a file.
 
 import pytest
 
+from agents import question_agent
 from agents.email_agent import EmailAgent
 from agents.question_agent import QuestionAgent
 from agents.transformation_agent import TransformationAgent
@@ -79,19 +80,24 @@ def make_validation_result(index, needs_clarification):
     }
 
 
-def test_question_agent_average_smooths_rather_than_overwrites():
+def test_question_agent_average_smooths_rather_than_overwrites(monkeypatch):
     """Averaging over a hardcoded count of 1 silently replaces the running
     average with the latest sample instead of smoothing it.
+
+    Triage times are pinned so this asserts the arithmetic exactly: an
+    overwrite leaves 0.35, a true running mean leaves 0.30.
     """
     agent = QuestionAgent()
-    samples = [
-        agent.generate_questions(make_validation_result(i, False))["processing_time"]
-        for i in range(5)
-    ]
+    # Built before the patch so the email agent still draws its own timings.
+    validations = [make_validation_result(i, False) for i in range(5)]
 
-    average = agent.performance_metrics["avg_processing_time"]
-    assert min(samples) <= average <= max(samples)
-    assert average != pytest.approx(samples[-1]), "average was overwritten by the last sample"
+    samples = iter([0.20, 0.30, 0.40, 0.25, 0.35])
+    monkeypatch.setattr(question_agent.random, "uniform", lambda low, high: next(samples))
+
+    for validation in validations:
+        agent.generate_questions(validation)
+
+    assert agent.performance_metrics["avg_processing_time"] == pytest.approx(0.30)
     assert agent.performance_metrics["files_reviewed"] == 5
 
 
