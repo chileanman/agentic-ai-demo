@@ -141,18 +141,20 @@ if st.session_state.selected_example:
             if 'file_processing_stages' in st.session_state:
                 st.session_state.file_processing_stages[example_id] = "validation"
 
-            # If validation requires questions, ask them
-            if validation_result.get("needs_clarification", False):
-                questions = question_agent.generate_questions(validation_result)
-                question_elapsed = question_agent.last_processing_time
+            # Every file goes past the question agent; only flagged ones get questions
+            question_review = question_agent.generate_questions(validation_result)
+            questions = question_review["questions"]
+            question_elapsed = question_review["processing_time"]
+            agent_times["Question Agent"] = question_elapsed
+            time.sleep(question_elapsed * DEMO_PACE)
+
+            if questions:
                 st.session_state.questions_asked.append({
                     "example_id": example_id,
                     "questions": questions,
                     "answered": False,
                     "timestamp": datetime.now()
                 })
-                agent_times["Question Agent"] = question_elapsed
-                time.sleep(question_elapsed * DEMO_PACE)
 
                 # Track processing stage for visualization
                 if 'file_processing_stages' in st.session_state:
@@ -167,8 +169,6 @@ if st.session_state.selected_example:
                     "duration": question_elapsed,
                     "file_id": example_id
                 })
-            else:
-                agent_times["Question Agent"] = 0.0
 
             # Transform the data
             transformed_data = transformation_agent.transform_data(file_info, validation_result)

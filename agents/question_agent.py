@@ -17,22 +17,34 @@ class QuestionAgent:
             "response_rate": 0.85,
             "question_quality": 0.92
         }
-        self.last_processing_time = 0.0
 
     def generate_questions(self, validation_result):
         """
-        Generates clarifying questions based on validation issues.
-        
+        Reviews a validated file and generates clarifying questions where needed.
+
+        Every file costs a short triage pass; only files flagged for
+        clarification go on to the slower question-generation work.
+
         Args:
             validation_result (dict): Results from the validation agent
-            
+
         Returns:
-            list: List of questions to ask about the file
+            dict: {"questions": list, "processing_time": float}
         """
+        time.sleep(0.1)  # Just a small delay for demo purposes
+
+        # Files that pass validation still cost a brief triage read
+        if not validation_result.get("needs_clarification", False):
+            triage_time = random.uniform(0.15, 0.45)
+            self.performance_metrics["avg_processing_time"] = update_performance_metric(
+                self.performance_metrics["avg_processing_time"],
+                max(self.performance_metrics["questions_generated"], 1),
+                triage_time
+            )
+            return {"questions": [], "processing_time": triage_time}
+
         # Simulate processing time
         processing_time = random.uniform(0.5, 1.5)
-        self.last_processing_time = processing_time
-        time.sleep(0.1)  # Just a small delay for demo purposes
 
         questions = []
         file_info = validation_result["file_info"]
@@ -114,8 +126,8 @@ class QuestionAgent:
             self.performance_metrics["questions_generated"],
             processing_time
         )
-        
-        return questions
+
+        return {"questions": questions, "processing_time": processing_time}
     
     def get_performance_stats(self):
         """Returns the current performance metrics for this agent"""
