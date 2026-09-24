@@ -29,3 +29,30 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deliberately not 3.9.18: black, flake8 and isort all require >= 3.10,
+      # so they cannot run on the interpreter the app deploys to. Formatting
+      # is interpreter-independent, and black targets py39 via pyproject.toml.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install lint tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-lint.txt
+
+      - name: black --check
+        run: black --check .
+
+      - name: isort --check-only
+        run: isort --check-only .
+
+      - name: flake8
+        run: flake8 .
