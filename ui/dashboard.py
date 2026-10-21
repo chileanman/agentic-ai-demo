@@ -10,7 +10,7 @@ from ui.transformation_view import render_transformation_tab
 
 # Import custom views
 from ui.validation_view import render_validation_tab
-from utils.cost_utils import format_cost
+from utils.cost_utils import build_cost_rows, format_cost
 
 styles = {
     "metricsTitle": "display: flex; flex-direction: column; width: 100%;",
@@ -258,23 +258,11 @@ def render_dashboard():
         ]
 
         if costed_files:
-            cost_rows = []
-            for f in costed_files:
-                breakdown = st.session_state.file_costs[f["example_id"]]
-                cost_rows.append(
-                    {
-                        "File": f["filename"],
-                        "Cost (USD)": breakdown["compute_cost"],
-                        "Cost Type": "Compute",
-                    }
-                )
-                cost_rows.append(
-                    {
-                        "File": f["filename"],
-                        "Cost (USD)": breakdown["model_cost"],
-                        "Cost Type": "Model",
-                    }
-                )
+            # Rows are labelled "<example_id> · <filename>" so same-named files
+            # stay separate bars instead of sharing one x-axis category.
+            cost_rows, detail_rows = build_cost_rows(
+                costed_files, st.session_state.file_costs
+            )
 
             fig = px.bar(
                 pd.DataFrame(cost_rows),
@@ -286,29 +274,7 @@ def render_dashboard():
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            detail_df = pd.DataFrame(
-                [
-                    {
-                        "File": f["filename"],
-                        "Compute (s)": round(
-                            st.session_state.file_costs[f["example_id"]][
-                                "compute_seconds"
-                            ],
-                            2,
-                        ),
-                        "Est. Tokens": st.session_state.file_costs[f["example_id"]][
-                            "estimated_tokens"
-                        ],
-                        "Questions": st.session_state.file_costs[f["example_id"]][
-                            "question_count"
-                        ],
-                        "Total": format_cost(
-                            st.session_state.file_costs[f["example_id"]]["total_cost"]
-                        ),
-                    }
-                    for f in costed_files
-                ]
-            )
+            detail_df = pd.DataFrame(detail_rows)
             st.dataframe(detail_df, use_container_width=True)
             st.caption(
                 "Illustrative rates applied to the demo's simulated processing "
