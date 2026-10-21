@@ -12,6 +12,7 @@ from utils.cost_utils import (
     COMPUTE_COST_PER_SECOND,
     LLM_COST_PER_1K_TOKENS,
     TOKENS_PER_QUESTION,
+    build_cost_rows,
     calculate_costs,
     estimate_token_usage,
     format_cost,
@@ -98,3 +99,63 @@ def test_format_cost_keeps_sub_cent_amounts_visible():
     assert format_cost(0.0034) == "$0.0034"
     assert format_cost(0) == "$0.0000"
     assert format_cost(1234.5) == "$1,234.5000"
+
+
+def _costs(complexity="medium", questions=2):
+    return calculate_costs(AGENT_TIMES, complexity, questions)
+
+
+def test_same_filename_gets_distinct_x_labels():
+    """Equal x values collapse into one bar category, merging two files' costs."""
+    files = [
+        {"example_id": "ex1", "filename": "report.csv"},
+        {"example_id": "ex2", "filename": "report.csv"},
+    ]
+    costs = {"ex1": _costs(), "ex2": _costs("high")}
+
+    chart_rows, detail_rows = build_cost_rows(files, costs)
+
+    assert len({r["File"] for r in chart_rows}) == 2
+    assert len({r["File"] for r in detail_rows}) == 2
+    assert all("report.csv" in r["File"] for r in chart_rows)
+
+
+def test_each_costed_file_has_a_compute_and_a_model_row():
+    files = [
+        {"example_id": "ex1", "filename": "a.csv"},
+        {"example_id": "ex2", "filename": "a.csv"},
+    ]
+    costs = {"ex1": _costs(), "ex2": _costs()}
+
+    chart_rows, detail_rows = build_cost_rows(files, costs)
+
+    assert len(chart_rows) == 4
+    assert len(detail_rows) == 2
+    for example_id in ("ex1", "ex2"):
+        types = sorted(
+            r["Cost Type"] for r in chart_rows if r["File"].startswith(example_id)
+        )
+        assert types == ["Compute", "Model"]
+    first = [r for r in chart_rows if r["File"].startswith("ex1")]
+    assert {r["Cost Type"]: r["Cost (USD)"] for r in first} == {
+        "Compute": costs["ex1"]["compute_cost"],
+        "Model": costs["ex1"]["model_cost"],
+    }
+
+
+def test_files_without_a_cost_entry_are_skipped():
+    files = [
+        {"example_id": "old", "filename": "legacy.csv"},
+        {"example_id": "new", "filename": "fresh.csv"},
+    ]
+
+    chart_rows, detail_rows = build_cost_rows(files, {"new": _costs()})
+
+    assert all("legacy.csv" not in r["File"] for r in chart_rows)
+    assert len(detail_rows) == 1
+    assert detail_rows[0]["File"] == "new · fresh.csv"
+
+
+def test_no_costed_files_gives_no_rows():
+    assert build_cost_rows([], {}) == ([], [])
+    assert build_cost_rows([{"example_id": "x", "filename": "f"}], {}) == ([], [])

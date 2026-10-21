@@ -84,3 +84,50 @@ def format_cost(amount):
     two-decimal format would render every file as "$0.00".
     """
     return "${:,.4f}".format(float(amount))
+
+
+def build_cost_rows(processed_files, file_costs):
+    """Builds the rows behind the dashboard's Cost Breakdown tab.
+
+    Each file is labelled ``"<example_id> · <filename>"``. The filename alone
+    is not unique (the same example can be processed twice, and two examples
+    can share a name), and a bar chart treats equal x values as one category,
+    so same-named files would stack into a single bar and the table rows would
+    be indistinguishable.
+
+    Args:
+        processed_files (list): dicts with at least ``example_id`` and
+            ``filename``, as in ``st.session_state.processed_files``.
+        file_costs (dict): example_id -> the dict ``calculate_costs`` returns.
+            Files with no entry (processed before cost tracking existed) are
+            skipped.
+
+    Returns:
+        tuple: (chart_rows, detail_rows). chart_rows has a Compute and a Model
+            row per costed file; detail_rows has one row per costed file.
+    """
+    chart_rows = []
+    detail_rows = []
+    for f in processed_files:
+        breakdown = file_costs.get(f["example_id"])
+        if breakdown is None:
+            continue
+        label = "{} · {}".format(f["example_id"], f["filename"])
+        chart_rows.append({
+            "File": label,
+            "Cost (USD)": breakdown["compute_cost"],
+            "Cost Type": "Compute"
+        })
+        chart_rows.append({
+            "File": label,
+            "Cost (USD)": breakdown["model_cost"],
+            "Cost Type": "Model"
+        })
+        detail_rows.append({
+            "File": label,
+            "Compute (s)": round(breakdown["compute_seconds"], 2),
+            "Est. Tokens": breakdown["estimated_tokens"],
+            "Questions": breakdown["question_count"],
+            "Total": format_cost(breakdown["total_cost"]),
+        })
+    return chart_rows, detail_rows
