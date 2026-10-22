@@ -133,3 +133,19 @@ def test_pipeline_completes_for_every_complexity():
     for complexity in ["low", "medium", "high"]:
         for index in range(5):
             run_pipeline(index, complexity)
+
+
+def test_update_performance_metric_count_includes_the_new_sample():
+    """Pins the helper's contract (F-13-GPT-1): ``current_count`` is the count
+    AFTER the new sample is added, so callers increment first, then update."""
+    from utils.file_utils import update_performance_metric
+
+    avg = 0.0
+    for count, value in enumerate([0.20, 0.30, 0.40, 0.25, 0.35], start=1):
+        avg = update_performance_metric(avg, count, value)
+    assert avg == pytest.approx(0.30)
+    # Passing the pre-increment count (the reviewer's proposed "fix") is wrong:
+    wrong = 0.0
+    for count, value in enumerate([0.20, 0.30], start=0):
+        wrong = update_performance_metric(wrong, count, value)
+    assert wrong != pytest.approx(0.25)
