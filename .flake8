@@ -1,0 +1,18 @@
+[flake8]
+# Black is the line-length authority (88, set in pyproject.toml) and does not
+# wrap long strings or comments, so E501 here would only re-flag what black
+# has already decided. E203 and W503 are the two checks black's output
+# deliberately violates.
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .eggs,
+    *.egg,
+    build,
+    dist,
+    .tox
+per-file-ignores =
+    __init__.py:F401

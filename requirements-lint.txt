@@ -1,0 +1,9 @@
+# Kept separate from requirements-dev.txt on purpose: these three all require
+# Python >= 3.10, while the test job runs on 3.9.18 to match runtime.txt.
+# Installing them there would fail the build.
+#
+# Pinned exactly. An unpinned formatter turns green into red on its next
+# release, through no change of ours.
+black==26.5.1
+flake8==7.4.1
+isort==9.0.1
