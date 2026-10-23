@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest is now 26.04, which has no Python 3.9.18 build in actions/python-versions.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
