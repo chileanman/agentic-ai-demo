@@ -204,7 +204,6 @@ if st.session_state.selected_example:
                 example_data["complexity"],
                 len(questions)
             )
-            st.session_state.file_costs[example_id] = file_cost
 
             # Update processed files list
             st.session_state.processed_files.append({

@@ -225,15 +225,12 @@ def render_dashboard():
         costed_files = [
             f for f in st.session_state.processed_files
             if f.get("cost_breakdown")
-            or f["example_id"] in st.session_state.get("file_costs", {})
         ]
 
         if costed_files:
             # Rows are labelled "<example_id> · <filename>" so same-named files
             # stay separate bars instead of sharing one x-axis category.
-            cost_rows, detail_rows = build_cost_rows(
-                costed_files, st.session_state.file_costs
-            )
+            cost_rows, detail_rows = build_cost_rows(costed_files)
 
             fig = px.bar(
                 pd.DataFrame(cost_rows),

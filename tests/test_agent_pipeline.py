@@ -145,7 +145,7 @@ def test_update_performance_metric_count_includes_the_new_sample():
         avg = update_performance_metric(avg, count, value)
     assert avg == pytest.approx(0.30)
     # Passing the pre-increment count (the reviewer's proposed "fix") is wrong:
-    wrong = 0.0
-    for count, value in enumerate([0.20, 0.30], start=0):
-        wrong = update_performance_metric(wrong, count, value)
+    # the 2nd sample with count=1 would just replace the average.
+    wrong = update_performance_metric(0.20, 1, 0.30)
     assert wrong != pytest.approx(0.25)
+    assert update_performance_metric(0.20, 2, 0.30) == pytest.approx(0.25)

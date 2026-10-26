@@ -111,9 +111,10 @@ def test_same_filename_gets_distinct_x_labels():
         {"example_id": "ex1", "filename": "report.csv"},
         {"example_id": "ex2", "filename": "report.csv"},
     ]
-    costs = {"ex1": _costs(), "ex2": _costs("high")}
+    files[0]["cost_breakdown"] = _costs()
+    files[1]["cost_breakdown"] = _costs("high")
 
-    chart_rows, detail_rows = build_cost_rows(files, costs)
+    chart_rows, detail_rows = build_cost_rows(files)
 
     assert len({r["File"] for r in chart_rows}) == 2
     assert len({r["File"] for r in detail_rows}) == 2
@@ -126,8 +127,10 @@ def test_each_costed_file_has_a_compute_and_a_model_row():
         {"example_id": "ex2", "filename": "a.csv"},
     ]
     costs = {"ex1": _costs(), "ex2": _costs()}
+    files[0]["cost_breakdown"] = costs["ex1"]
+    files[1]["cost_breakdown"] = costs["ex2"]
 
-    chart_rows, detail_rows = build_cost_rows(files, costs)
+    chart_rows, detail_rows = build_cost_rows(files)
 
     assert len(chart_rows) == 4
     assert len(detail_rows) == 2
@@ -146,10 +149,10 @@ def test_each_costed_file_has_a_compute_and_a_model_row():
 def test_files_without_a_cost_entry_are_skipped():
     files = [
         {"example_id": "old", "filename": "legacy.csv"},
-        {"example_id": "new", "filename": "fresh.csv"},
+        {"example_id": "new", "filename": "fresh.csv", "cost_breakdown": _costs()},
     ]
 
-    chart_rows, detail_rows = build_cost_rows(files, {"new": _costs()})
+    chart_rows, detail_rows = build_cost_rows(files)
 
     assert all("legacy.csv" not in r["File"] for r in chart_rows)
     assert len(detail_rows) == 1
@@ -157,8 +160,8 @@ def test_files_without_a_cost_entry_are_skipped():
 
 
 def test_no_costed_files_gives_no_rows():
-    assert build_cost_rows([], {}) == ([], [])
-    assert build_cost_rows([{"example_id": "x", "filename": "f"}], {}) == ([], [])
+    assert build_cost_rows([]) == ([], [])
+    assert build_cost_rows([{"example_id": "x", "filename": "f"}]) == ([], [])
 
 
 def test_processing_the_same_example_twice_keeps_each_runs_cost():
@@ -169,10 +172,34 @@ def test_processing_the_same_example_twice_keeps_each_runs_cost():
         {"example_id": "ex1", "filename": "a.csv", "cost_breakdown": second},
     ]
 
-    chart_rows, detail_rows = build_cost_rows(files, {"ex1": second})
+    chart_rows, detail_rows = build_cost_rows(files)
 
     assert len({r["File"] for r in chart_rows}) == 2
     assert len({r["File"] for r in detail_rows}) == 2
     assert detail_rows[0]["Total"] == format_cost(first["total_cost"])
     assert detail_rows[1]["Total"] == format_cost(second["total_cost"])
     assert first["total_cost"] != second["total_cost"]
+
+
+def test_legacy_row_is_not_costed_from_a_later_run_of_the_same_example():
+    """A legacy row (no cost_breakdown) plus a reprocess of the same example_id
+    must not borrow the new run's cost: chart total == dashboard metric total."""
+    run = _costs("high")
+    files = [
+        {"example_id": "ex1", "filename": "a.csv", "total_cost": 0.0},
+        {"example_id": "ex1", "filename": "a.csv", "cost_breakdown": run,
+         "total_cost": run["total_cost"]},
+    ]
+    # Mirror ui/dashboard.py tab3: only rows with their own breakdown are costed.
+    costed = [f for f in files if f.get("cost_breakdown")]
+
+    chart_rows, detail_rows = build_cost_rows(costed)
+    chart_total = sum(r["Cost (USD)"] for r in chart_rows)
+    metric_total = sum(f.get("total_cost", 0.0) for f in files)
+
+    assert chart_total == pytest.approx(metric_total)
+    assert len(detail_rows) == 1
+    # And build_cost_rows alone also refuses to cost the legacy row.
+    chart_rows_all, detail_all = build_cost_rows(files)
+    assert sum(r["Cost (USD)"] for r in chart_rows_all) == pytest.approx(metric_total)
+    assert len(detail_all) == 1
