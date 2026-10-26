@@ -159,3 +159,20 @@ def test_files_without_a_cost_entry_are_skipped():
 def test_no_costed_files_gives_no_rows():
     assert build_cost_rows([], {}) == ([], [])
     assert build_cost_rows([{"example_id": "x", "filename": "f"}], {}) == ([], [])
+
+
+def test_processing_the_same_example_twice_keeps_each_runs_cost():
+    """A re-run must not overwrite the first run's breakdown or share its label."""
+    first, second = _costs(), _costs("high")
+    files = [
+        {"example_id": "ex1", "filename": "a.csv", "cost_breakdown": first},
+        {"example_id": "ex1", "filename": "a.csv", "cost_breakdown": second},
+    ]
+
+    chart_rows, detail_rows = build_cost_rows(files, {"ex1": second})
+
+    assert len({r["File"] for r in chart_rows}) == 2
+    assert len({r["File"] for r in detail_rows}) == 2
+    assert detail_rows[0]["Total"] == format_cost(first["total_cost"])
+    assert detail_rows[1]["Total"] == format_cost(second["total_cost"])
+    assert first["total_cost"] != second["total_cost"]

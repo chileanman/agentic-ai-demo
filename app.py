@@ -217,7 +217,8 @@ if st.session_state.selected_example:
                 "processing_time": total_processing_time,
                 "status": "Processed" if not validation_result.get("needs_clarification", False) else "Awaiting Clarification",
                 "complexity": example_data["complexity"],
-                "total_cost": file_cost["total_cost"]
+                "total_cost": file_cost["total_cost"],
+                "cost_breakdown": file_cost
             })
             
             # Update processing status

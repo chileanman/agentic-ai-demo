@@ -224,7 +224,8 @@ def render_dashboard():
         # Only files processed since cost tracking was added have a breakdown.
         costed_files = [
             f for f in st.session_state.processed_files
-            if f["example_id"] in st.session_state.get("file_costs", {})
+            if f.get("cost_breakdown")
+            or f["example_id"] in st.session_state.get("file_costs", {})
         ]
 
         if costed_files:

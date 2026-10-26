@@ -108,11 +108,17 @@ def build_cost_rows(processed_files, file_costs):
     """
     chart_rows = []
     detail_rows = []
+    runs_seen = {}
     for f in processed_files:
-        breakdown = file_costs.get(f["example_id"])
+        runs_seen[f["example_id"]] = runs_seen.get(f["example_id"], 0) + 1
+        # A run's own breakdown wins: file_costs is keyed by example_id, so a
+        # re-run would overwrite the earlier run's cost there.
+        breakdown = f.get("cost_breakdown") or file_costs.get(f["example_id"])
         if breakdown is None:
             continue
         label = "{} · {}".format(f["example_id"], f["filename"])
+        if runs_seen[f["example_id"]] > 1:
+            label += " (run {})".format(runs_seen[f["example_id"]])
         chart_rows.append({
             "File": label,
             "Cost (USD)": breakdown["compute_cost"],
