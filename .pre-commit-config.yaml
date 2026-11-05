@@ -1,0 +1,22 @@
+# Optional local convenience. The CI lint job is the actual gate — nothing
+# here is required for a contribution to pass review.
+#
+# Install with:  pip install pre-commit && pre-commit install
+#
+# Revisions match requirements-lint.txt exactly; if you bump one, bump both,
+# or a commit that passes locally will fail in CI.
+repos:
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 9.0.1
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.4.1
+    hooks:
+      - id: flake8

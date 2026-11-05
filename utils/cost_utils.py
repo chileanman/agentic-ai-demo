@@ -116,21 +116,23 @@ def build_cost_rows(processed_files):
         label = "{} · {}".format(f["example_id"], f["filename"])
         if runs_seen[f["example_id"]] > 1:
             label += " (run {})".format(runs_seen[f["example_id"]])
-        chart_rows.append({
-            "File": label,
-            "Cost (USD)": breakdown["compute_cost"],
-            "Cost Type": "Compute"
-        })
-        chart_rows.append({
-            "File": label,
-            "Cost (USD)": breakdown["model_cost"],
-            "Cost Type": "Model"
-        })
-        detail_rows.append({
-            "File": label,
-            "Compute (s)": round(breakdown["compute_seconds"], 2),
-            "Est. Tokens": breakdown["estimated_tokens"],
-            "Questions": breakdown["question_count"],
-            "Total": format_cost(breakdown["total_cost"]),
-        })
+        chart_rows.append(
+            {
+                "File": label,
+                "Cost (USD)": breakdown["compute_cost"],
+                "Cost Type": "Compute",
+            }
+        )
+        chart_rows.append(
+            {"File": label, "Cost (USD)": breakdown["model_cost"], "Cost Type": "Model"}
+        )
+        detail_rows.append(
+            {
+                "File": label,
+                "Compute (s)": round(breakdown["compute_seconds"], 2),
+                "Est. Tokens": breakdown["estimated_tokens"],
+                "Questions": breakdown["question_count"],
+                "Total": format_cost(breakdown["total_cost"]),
+            }
+        )
     return chart_rows, detail_rows

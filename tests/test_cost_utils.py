@@ -187,8 +187,12 @@ def test_legacy_row_is_not_costed_from_a_later_run_of_the_same_example():
     run = _costs("high")
     files = [
         {"example_id": "ex1", "filename": "a.csv", "total_cost": 0.0},
-        {"example_id": "ex1", "filename": "a.csv", "cost_breakdown": run,
-         "total_cost": run["total_cost"]},
+        {
+            "example_id": "ex1",
+            "filename": "a.csv",
+            "cost_breakdown": run,
+            "total_cost": run["total_cost"],
+        },
     ]
     # Mirror ui/dashboard.py tab3: only rows with their own breakdown are costed.
     costed = [f for f in files if f.get("cost_breakdown")]
