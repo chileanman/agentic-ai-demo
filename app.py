@@ -221,7 +221,6 @@ if st.session_state.selected_example:
             file_cost = calculate_costs(
                 agent_times, example_data["complexity"], len(questions)
             )
-            st.session_state.file_costs[example_id] = file_cost
 
             # Update processed files list
             st.session_state.processed_files.append(
@@ -240,6 +239,7 @@ if st.session_state.selected_example:
                     ),
                     "complexity": example_data["complexity"],
                     "total_cost": file_cost["total_cost"],
+                    "cost_breakdown": file_cost,
                 }
             )
 

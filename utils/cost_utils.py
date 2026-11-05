@@ -86,7 +86,7 @@ def format_cost(amount):
     return "${:,.4f}".format(float(amount))
 
 
-def build_cost_rows(processed_files, file_costs):
+def build_cost_rows(processed_files):
     """Builds the rows behind the dashboard's Cost Breakdown tab.
 
     Each file is labelled ``"<example_id> · <filename>"``. The filename alone
@@ -98,9 +98,8 @@ def build_cost_rows(processed_files, file_costs):
     Args:
         processed_files (list): dicts with at least ``example_id`` and
             ``filename``, as in ``st.session_state.processed_files``.
-        file_costs (dict): example_id -> the dict ``calculate_costs`` returns.
-            Files with no entry (processed before cost tracking existed) are
-            skipped.
+            Only rows carrying their own ``cost_breakdown`` are costed; legacy
+            rows without one are skipped (never borrowed from another run).
 
     Returns:
         tuple: (chart_rows, detail_rows). chart_rows has a Compute and a Model
@@ -108,11 +107,15 @@ def build_cost_rows(processed_files, file_costs):
     """
     chart_rows = []
     detail_rows = []
+    runs_seen = {}
     for f in processed_files:
-        breakdown = file_costs.get(f["example_id"])
-        if breakdown is None:
+        runs_seen[f["example_id"]] = runs_seen.get(f["example_id"], 0) + 1
+        breakdown = f.get("cost_breakdown")
+        if not breakdown:
             continue
         label = "{} · {}".format(f["example_id"], f["filename"])
+        if runs_seen[f["example_id"]] > 1:
+            label += " (run {})".format(runs_seen[f["example_id"]])
         chart_rows.append(
             {
                 "File": label,

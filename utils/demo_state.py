@@ -1,8 +1,8 @@
 """Single source of truth for the demo's session state.
 
 Initialisation and "Reset Demo" were maintained as two separate hand-written
-lists, and they drifted: `agent_times`, `file_costs` and
-`file_processing_stages` were all created at startup but never cleared on
+lists, and they drifted: `agent_times` and
+`file_processing_stages` were created at startup but never cleared on
 reset, so per-file detail from a previous run survived into the next one.
 
 Both operations now read the same table, so a key added in one place cannot
@@ -22,7 +22,6 @@ DEMO_STATE_DEFAULTS = {
     "selected_example": lambda: None,
     "process_queue": list,
     "agent_times": dict,
-    "file_costs": dict,
     "file_processing_stages": dict,
 }
 

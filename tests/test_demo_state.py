@@ -27,9 +27,9 @@ def test_reset_clears_every_key_that_init_creates():
     assert all(state[key] in ([], {}, None) for key in created)
 
 
-@pytest.mark.parametrize("key", ["agent_times", "file_costs", "file_processing_stages"])
+@pytest.mark.parametrize("key", ["agent_times", "file_processing_stages"])
 def test_reset_clears_the_keys_that_used_to_leak(key):
-    """These three were initialised but never cleared before this change."""
+    """These two were initialised but never cleared before this change."""
     state = {}
     initialise_session_state(state)
     state[key] = {"example_1": "stale"}
@@ -44,16 +44,12 @@ def test_reset_hands_back_fresh_containers():
     state = {}
     initialise_session_state(state)
     old_files = state["processed_files"]
-    old_costs = state["file_costs"]
     old_files.append("stale")
-    old_costs["example_1"] = "stale"
 
     reset_demo_state(state)
 
     assert state["processed_files"] == []
-    assert state["file_costs"] == {}
     assert state["processed_files"] is not old_files
-    assert state["file_costs"] is not old_costs
 
 
 def test_init_does_not_clobber_existing_values():
