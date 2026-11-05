@@ -8,6 +8,7 @@ import random
 # Import custom views
 from ui.validation_view import render_validation_tab
 from ui.transformation_view import render_transformation_tab
+from utils.cost_utils import build_cost_rows, format_cost
 
 styles = {
     "metricsTitle": "display: flex; flex-direction: column; width: 100%;",
@@ -64,7 +65,7 @@ def render_dashboard():
         st.progress(0, text=progress_text)
     
     # Create columns for metrics
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         total_files = len(st.session_state.processed_files)
@@ -155,9 +156,26 @@ def render_dashboard():
                 """,
                 unsafe_allow_html=True
             )
-    
+
+    with col5:
+        # Estimated spend across everything processed so far. Files recorded
+        # before cost tracking existed simply contribute nothing.
+        total_cost = sum(
+            f.get("total_cost", 0.0) for f in st.session_state.processed_files
+        )
+        st.markdown(
+            f"""
+            <div style="{styles['metricsTitle']}
+            ">
+                <div><p style="{styles['metricsSubtitle']}">Est. Processing Cost</p></div>
+                <div style="{styles['metricsValue']}">{format_cost(total_cost)}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
     # Create tabs for different visualizations
-    tab1, tab2 = st.tabs(["Files by Type", "Processing Time"])
+    tab1, tab2, tab3 = st.tabs(["Files by Type", "Processing Time", "Cost Breakdown"])
     
     with tab1:
         if st.session_state.processed_files:
@@ -201,7 +219,38 @@ def render_dashboard():
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No files have been processed yet. Select an example from the sidebar to begin.")
-    
+
+    with tab3:
+        # Only files processed since cost tracking was added have a breakdown.
+        costed_files = [
+            f for f in st.session_state.processed_files
+            if f.get("cost_breakdown")
+        ]
+
+        if costed_files:
+            # Rows are labelled "<example_id> · <filename>" so same-named files
+            # stay separate bars instead of sharing one x-axis category.
+            cost_rows, detail_rows = build_cost_rows(costed_files)
+
+            fig = px.bar(
+                pd.DataFrame(cost_rows),
+                x="File",
+                y="Cost (USD)",
+                color="Cost Type",
+                title="Estimated Cost by File",
+                color_discrete_sequence=px.colors.qualitative.Pastel
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+            detail_df = pd.DataFrame(detail_rows)
+            st.dataframe(detail_df, use_container_width=True)
+            st.caption(
+                "Illustrative rates applied to the demo's simulated processing "
+                "times, file complexity and clarifying questions."
+            )
+        else:
+            st.info("No files have been processed yet. Select an example from the sidebar to begin.")
+
     # Agent Activity Timeline moved to agent details section
     
     # File picker for detailed view

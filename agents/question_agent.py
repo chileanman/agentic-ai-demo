@@ -14,6 +14,7 @@ class QuestionAgent:
         self.performance_metrics = {
             "avg_processing_time": 0.8,  # seconds
             "questions_generated": 0,
+            "files_reviewed": 0,
             "response_rate": 0.85,
             "question_quality": 0.92
         }
@@ -33,12 +34,16 @@ class QuestionAgent:
         """
         time.sleep(0.1)  # Just a small delay for demo purposes
 
+        # Counts files, not questions, so the running average is not skewed by
+        # how many questions a single file happened to produce.
+        self.performance_metrics["files_reviewed"] += 1
+
         # Files that pass validation still cost a brief triage read
         if not validation_result.get("needs_clarification", False):
             triage_time = random.uniform(0.15, 0.45)
             self.performance_metrics["avg_processing_time"] = update_performance_metric(
                 self.performance_metrics["avg_processing_time"],
-                max(self.performance_metrics["questions_generated"], 1),
+                self.performance_metrics["files_reviewed"],
                 triage_time
             )
             return {"questions": [], "processing_time": triage_time}
@@ -123,7 +128,7 @@ class QuestionAgent:
         self.performance_metrics["questions_generated"] += len(questions)
         self.performance_metrics["avg_processing_time"] = update_performance_metric(
             self.performance_metrics["avg_processing_time"],
-            self.performance_metrics["questions_generated"],
+            self.performance_metrics["files_reviewed"],
             processing_time
         )
 
